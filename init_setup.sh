@@ -25,7 +25,7 @@ gcloud projects create ${TF_PROJECT_ID} \
   --name="Root-level project Terraform Admin Project"
   --organization ${TF_VAR_org_id} \
   --set-as-default \
-  --labels=level=0 
+  --labels=level=0
 
 echo "INFO: Linking root project '${TF_PROJECT_ID}' to billing account ${TF_VAR_billing_account}:"
 gcloud alpha billing projects link ${TF_PROJECT_ID} \
@@ -60,6 +60,13 @@ echo "INFO: Enabling service compute.."
 gcloud services enable compute.googleapis.com
 echo "INFO: Enabling service sqladmin.."
 gcloud services enable sqladmin.googleapis.com
+
+# Part to setup terraform directories and backend env
+
+mkdir -p terraform/test; cd terraform/test
+# create backend bucket
+gsutil mb -l ${TF_VAR_region} -p ${TF_PROJECT_ID} gs://${TF_PROJECT_ID}
+
 
 
 # the end :)
