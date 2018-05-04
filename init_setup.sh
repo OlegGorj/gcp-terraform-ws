@@ -11,6 +11,9 @@ else
   exit 1
 fi
 
+## TODO: check all required variables..
+
+
 echo "INFO: Listing organizations:"
 gcloud beta organizations list
 
@@ -22,10 +25,14 @@ TF_PROJECT_ID="${TF_ADMIN}-${RANDOMID}"
 
 echo "INFO: Attempting to create root project '${TF_PROJECT_ID}' :"
 gcloud projects create ${TF_PROJECT_ID} \
-  --name="Root-level project Terraform Admin Project"
   --organization ${TF_VAR_org_id} \
   --set-as-default \
   --labels=level=0
+ret_code="$?"
+if [ ret_code -nq 0 ]; then
+  echo "ERROR: return code: " $ret_code
+  exit 1
+fi
 
 echo "INFO: Linking root project '${TF_PROJECT_ID}' to billing account ${TF_VAR_billing_account}:"
 gcloud alpha billing projects link ${TF_PROJECT_ID} \
@@ -64,9 +71,30 @@ gcloud services enable sqladmin.googleapis.com
 # Part to setup terraform directories and backend env
 
 mkdir -p terraform/test; cd terraform/test
+
 # create backend bucket
 gsutil mb -l ${TF_VAR_region} -p ${TF_PROJECT_ID} gs://${TF_PROJECT_ID}
+# generate backend TF file
+cat > backend.tf <<EOF
+terraform {
+ backend "gcs" {
+   bucket = "${TF_PROJECT_ID}"
+   prefix  = "terraform/state/test"
+ }
+}
+EOF
+# set proper varibales for TF init
+export GOOGLE_APPLICATION_CREDENTIALS=${TF_CREDS}
+export GOOGLE_PROJECT=${TF_PROJECT_ID}
 
+# Activate Terraform service account
+gcloud auth activate-service-account --key-file=${TF_CREDS}
+
+# ...and run TF init
+terraform init
+
+# ...followed by TF plan
+terraform plan
 
 
 # the end :)

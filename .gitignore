@@ -1,1 +1,3 @@
 .gcp_env
+.terraform
+terraform/test/.terraform
