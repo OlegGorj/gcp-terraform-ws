@@ -20,7 +20,7 @@ gcloud beta organizations list
 echo "INFO: Listing billing accounts:"
 gcloud alpha billing accounts list
 
-RANDOMID=$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 9 ; echo)
+RANDOMID=$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 8 ; echo)
 TF_PROJECT_ID="${TF_ADMIN}-${RANDOMID}"
 
 echo "INFO: Attempting to create root project '${TF_PROJECT_ID}' :"
@@ -50,6 +50,10 @@ echo "INFO: Binding service account '${SERVICE_ACCOUNT}@${TF_PROJECT_ID}.iam.gse
 gcloud projects add-iam-policy-binding ${TF_PROJECT_ID} \
   --member serviceAccount:${SERVICE_ACCOUNT}@${TF_PROJECT_ID}.iam.gserviceaccount.com \
   --role roles/viewer
+
+gcloud projects add-iam-policy-binding ${TF_PROJECT_ID} \
+  --member serviceAccount:${SERVICE_ACCOUNT}@${TF_PROJECT_ID}.iam.gserviceaccount.com \
+  --role roles/editor
 
 echo "INFO: Binding service account '${SERVICE_ACCOUNT}@${TF_PROJECT_ID}.iam.gserviceaccount.com' to IAM 'roles/storage.admin' : "
 gcloud projects add-iam-policy-binding ${TF_PROJECT_ID} \
