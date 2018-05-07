@@ -24,6 +24,28 @@ export TF_VAR_ssh_key=~/.ssh/dev_key.pub  # for example
 export TF_ADMIN=tf-admin
 export TF_CREDS=~/.config/gcloud/tf-admin.json
 
+# and this two at the end before tf init
+export GOOGLE_PROJECT=${TF_PROJECT_ID}
+export GOOGLE_APPLICATION_CREDENTIALS=${TF_CREDS}
+
 ```
+
+## Step 2: clone repo
+
+```
+git clone https://github.com/OlegGorj/gcp-terraform-ws.git
+```
+
+## Step 3: Initialize TF environment and plan
+
+```
+cd gcp-terraform-ws/terraform/test
+
+terraform init
+
+terraform plan
+```
+
+At this point, your TF with GCP as provider and backend, is setup and ready to go.
 
 ---

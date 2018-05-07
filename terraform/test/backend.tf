@@ -1,6 +1,6 @@
 terraform {
  backend "gcs" {
-   bucket = "tactical-coder-202920"
+   bucket = "tf-admin-il617lmh"
    prefix  = "terraform/state/test"
  }
 }
