@@ -1,3 +1,7 @@
 .gcp_env
 .terraform
-terraform/test/.terraform
+./project1-gcp-cli/terraform/*/.terraform
+./environments/*/*.tfvars
+./environments/*/.terraform
+./environments/*/*.tfstate*
+./project*/terraform/*/backend.tf

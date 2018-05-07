@@ -5,12 +5,19 @@
 
 A few practice/test projects on Google Cloud using Terraform and Packer
 
-## Step 1: Setup environment
+---
+
+# Project 1 - Admin project in GCP
 
 Objectives:
 
-- Create a Terraform admin project for the service account and a remote state bucket.
-- Configure remote state in Google Cloud Storage (GCS).
+- Create a Terraform admin project for the service account and a remote state bucket
+- Link root project to billing account
+- Create service Terraform account
+- Configure remote state in Google Cloud Storage (GCS)
+
+## Step 1: Setup environment
+
 
 Create GCP environment file in your home directory called `~/.gcp_env` with the following content
 
@@ -36,11 +43,17 @@ export GOOGLE_APPLICATION_CREDENTIALS=${TF_CREDS}
 git clone https://github.com/OlegGorj/gcp-terraform-ws.git
 ```
 
-## Step 3: Initialize TF environment and plan
+## Step 3: Using GCP CLI create Host project, service account and generate Terraform code to store the state at the backend bucket
 
 ```
-cd gcp-terraform-ws/terraform/test
+cd gcp-terraform-ws/project1-gcp-cli/
 
+./init_setup.sh ~/.gcp_env
+```
+
+## Step 4: Initialize TF environment and plan
+
+```
 terraform init
 
 terraform plan
