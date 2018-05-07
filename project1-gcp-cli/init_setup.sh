@@ -104,7 +104,8 @@ terraform {
  }
 }
 EOF
-# set proper varibales for TF init
+
+# set proper vars for TF init
 export GOOGLE_APPLICATION_CREDENTIALS=${TF_CREDS}
 export GOOGLE_PROJECT=${TF_PROJECT_ID}
 
@@ -115,6 +116,6 @@ terraform init
 terraform plan
 
 # clean up
-gcloud auth login --activate admin@thetaconsulting.cloud
+gcloud auth login --activate ${GOOGLE_ADMIN_ACCOUNT}
 
 # the end :)

@@ -3,6 +3,10 @@
 
 A few practice/test projects on Google Cloud using Terraform and Packer
 
+---
+
+# Project 1 - Create root project, link root project to billing account, create
+
 ## Step 1: Setup environment
 
 Objectives:
@@ -34,11 +38,17 @@ export GOOGLE_APPLICATION_CREDENTIALS=${TF_CREDS}
 git clone https://github.com/OlegGorj/gcp-terraform-ws.git
 ```
 
-## Step 3: Initialize TF environment and plan
+## Step 3: Using GCP CLI create Host project, service account and generate Terraform code to store the state at the backend bucket
 
 ```
-cd gcp-terraform-ws/terraform/test
+cd gcp-terraform-ws/project1-gcp-cli/
 
+./init_setup.sh ~/.gcp_env
+```
+
+## Step 4: Initialize TF environment and plan
+
+```
 terraform init
 
 terraform plan
