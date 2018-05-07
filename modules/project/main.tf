@@ -47,6 +47,10 @@ resource "google_project_service" "project_compute_service" {
   project = "${google_project.project.project_id}"
   service = "compute.googleapis.com"
 }
+resource "google_project_service" "project_iam_service" {
+  project = "${google_project.project.project_id}"
+  service = "iam.googleapis.com"
+}
 resource "google_project_service" "project_sqladmin_service" {
   project = "${google_project.project.project_id}"
   service = "sqladmin.googleapis.com"

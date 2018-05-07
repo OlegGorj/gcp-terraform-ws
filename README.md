@@ -5,14 +5,17 @@ A few practice/test projects on Google Cloud using Terraform and Packer
 
 ---
 
-# Project 1 - Create root project, link root project to billing account, create
-
-## Step 1: Setup environment
+# Project 1 - Admin project in GCP
 
 Objectives:
 
-- Create a Terraform admin project for the service account and a remote state bucket.
-- Configure remote state in Google Cloud Storage (GCS).
+- Create a Terraform admin project for the service account and a remote state bucket
+- Link root project to billing account
+- Create service Terraform account
+- Configure remote state in Google Cloud Storage (GCS)
+
+## Step 1: Setup environment
+
 
 Create GCP environment file in your home directory called `~/.gcp_env` with the following content
 
