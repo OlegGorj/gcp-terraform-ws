@@ -3,3 +3,4 @@
 project1-gcp-cli/terraform/test/.terraform
 environments/*/*.tfvars
 environments/*/.terraform
+environments/*/*.tfstate*
