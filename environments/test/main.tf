@@ -20,7 +20,7 @@ module "project" {
   name            = "base-project-${var.env}"
   region          = "${var.region}"
   billing_account = "${var.billing_account}"
-  org_id          = "1070281113360"
+  org_id          = "${var.org_id}"
 #  credentials_file_path = "${var.credentials_file_path}"
   folder = "DEV_projects/"
   domain = "${var.domain}"
