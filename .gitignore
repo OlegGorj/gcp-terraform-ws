@@ -4,4 +4,4 @@
 ./environments/*/*.tfvars
 ./environments/*/.terraform
 ./environments/*/*.tfstate*
-./project1-gcp-cli/terraform/*/backend.tf
+./project*/terraform/*/backend.tf

@@ -11,9 +11,6 @@ variable "folder" {
   default = "/"
 }
 variable "domain" {}
-variable "project_services" {
-  type = "list"
-}
 #variable "credentials_file_path" {}
 
 # resources

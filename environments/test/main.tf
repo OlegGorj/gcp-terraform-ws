@@ -24,8 +24,4 @@ module "project" {
 #  credentials_file_path = "${var.credentials_file_path}"
   folder = "DEV_projects/"
   domain = "${var.domain}"
-  project_services = [
-    "compute.googleapis.com",
-    "sqladmin.googleapis.com"
-  ]
 }
