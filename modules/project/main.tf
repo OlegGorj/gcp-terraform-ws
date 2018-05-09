@@ -58,7 +58,7 @@ output "org_id" {
   value = "${data.google_organization.theorganization.id}"
 }
 
-output "id" {
+output "project_id" {
   value = "${google_project.project.id}"
 }
 
