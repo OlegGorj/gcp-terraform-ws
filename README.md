@@ -32,7 +32,6 @@ export TF_CREDS=~/.config/gcloud/tf-admin.json
 # and this two at the end before tf init
 export GOOGLE_PROJECT=${TF_PROJECT_ID}
 export GOOGLE_APPLICATION_CREDENTIALS=${TF_CREDS}
-
 ```
 
 ## Step 2: clone repo
