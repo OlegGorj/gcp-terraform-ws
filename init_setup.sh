@@ -12,7 +12,7 @@ else
 fi
 
 ## TODO: check all required variables..
-# gcloud config set account admin@thetaconsulting.cloud
+# gcloud config set account $GOOGLE_ADMIN_ACCOUNT
 
 echo "INFO: Listing organizations:"
 gcloud beta organizations list
@@ -23,20 +23,23 @@ gcloud alpha billing accounts list
 RANDOMID=$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 8 ; echo)
 TF_PROJECT_ID="${TF_ADMIN}-${RANDOMID}"
 
+# TODO check if folder exist - gcloud alpha resource-manager folders list --organization ${TF_VAR_org_id}
 echo "INFO: Attempting to create folder ${TF_FOLDER} for admin project '${TF_PROJECT_ID}' :"
 FULL_FOLDER_ID=$(gcloud alpha resource-manager folders create \
    --display-name=${TF_FOLDER} \
    --organization ${TF_VAR_org_id} \
    --format="value(name)")
 
-FOLDERID=$(echo $FULL_FOLDER_ID | sed 's/folders\///')
-echo "INFO: Folder ID: ${FOLDERID} "
+FOLDER_ID=$(echo $FULL_FOLDER_ID | sed 's/folders\///')
+echo "INFO: Folder ID: ${FOLDER_ID} "
+echo $FULL_FOLDER_ID > /tmp/full_folder.id
 
 echo "INFO: Attempting to create admin project '${TF_PROJECT_ID}' :"
 gcloud projects create ${TF_PROJECT_ID} \
   --set-as-default \
   --labels=level=0 \
-  --folder=${FOLDERID}
+  --folder=${FOLDER_ID}
+echo $${TF_PROJECT_ID}  > /tmp/tf_project.id
 
 # this is leftover, TODO
 ret_code="$?"
@@ -51,14 +54,14 @@ gcloud alpha billing projects link ${TF_PROJECT_ID} \
 
 echo "INFO: Creating service account '${SERVICE_ACCOUNT}' for project ${TF_PROJECT_ID}:"
 gcloud iam service-accounts create ${SERVICE_ACCOUNT} \
-  --display-name "Terraform admin account"
+  --display-name "Terraform admin service account"
 
 echo "INFO: Genarating new set of keys for service account '${SERVICE_ACCOUNT}@${TF_PROJECT_ID}.iam.gserviceaccount.com': "
 gcloud iam service-accounts keys create ${TF_CREDS} \
   --iam-account ${SERVICE_ACCOUNT}@${TF_PROJECT_ID}.iam.gserviceaccount.com
 
-echo "INFO: Binding service account '${SERVICE_ACCOUNT}@${TF_PROJECT_ID}.iam.gserviceaccount.com' to IAM 'roles/resourcemanager.folderAdmin' for folder ${FOLDERID} : "
-gcloud alpha resource-manager folders add-iam-policy-binding ${FOLDERID} \
+echo "INFO: Binding service account '${SERVICE_ACCOUNT}@${TF_PROJECT_ID}.iam.gserviceaccount.com' to IAM 'roles/resourcemanager.folderAdmin' for folder ${FOLDER_ID} : "
+gcloud alpha resource-manager folders add-iam-policy-binding ${FOLDER_ID} \
   --member serviceAccount:${SERVICE_ACCOUNT}@${TF_PROJECT_ID}.iam.gserviceaccount.com \
   --role=roles/resourcemanager.folderAdmin
 
@@ -93,9 +96,9 @@ gcloud services enable sqladmin.googleapis.com
 
 # Part to setup terraform directories and backend env
 
-mkdir -p terraform/test; cd terraform/test
-
 # create backend bucket
+echo "gsutil mb -l ${TF_VAR_region} -p ${TF_PROJECT_ID} gs://${TF_PROJECT_ID}"
+
 gsutil mb -l ${TF_VAR_region} -p ${TF_PROJECT_ID} gs://${TF_PROJECT_ID}
 
 gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}@${TF_PROJECT_ID}.iam.gserviceaccount.com:objectCreator,objectViewer  gs://${TF_PROJECT_ID}
@@ -126,6 +129,23 @@ EOF
 # set proper vars for TF init
 export GOOGLE_APPLICATION_CREDENTIALS=${TF_CREDS}
 export GOOGLE_PROJECT=${TF_PROJECT_ID}
+
+# generate TFVARS file for Terraform project
+mkdir -p environments/$TF_ENV
+cd environments/$TF_ENV
+cat << EOF >> $TF_ENV.tfvars
+env = "$TF_ENV"
+region = "$GOOGLE_REGION"
+billing_account = "$TF_VAR_billing_account"
+org_id = "$TF_VAR_org_id"
+domain = "$GOOGLE_DOMAIN"
+g_folder = "$FULL_FOLDER_ID"
+g_folder_id = "$FOLDER_ID"
+admin_project = "$TF_PROJECT_ID"
+
+EOF
+
+exit 0
 
 # ...and run TF init
 terraform init

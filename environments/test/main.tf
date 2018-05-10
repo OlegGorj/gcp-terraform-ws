@@ -21,8 +21,8 @@ module "host_project" {
   region          = "${var.region}"
   billing_account = "${var.billing_account}"
   org_id          = "${var.org_id}"
-  folder = "DEV_projects/"
   domain = "${var.domain}"
+  create_folder = true
 }
 
 module "service_1_project" {
@@ -31,7 +31,6 @@ module "service_1_project" {
   region          = "${var.region}"
   billing_account = "${var.billing_account}"
   org_id          = "${var.org_id}"
-  folder = "DEV_projects/"
   domain = "${var.domain}"
 }
 
@@ -41,7 +40,6 @@ module "service_2_project" {
   region          = "${var.region}"
   billing_account = "${var.billing_account}"
   org_id          = "${var.org_id}"
-  folder = "DEV_projects/"
   domain = "${var.domain}"
 }
 
