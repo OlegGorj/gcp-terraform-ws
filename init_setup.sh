@@ -23,7 +23,7 @@ gcloud alpha billing accounts list
 RANDOMID=$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 8 ; echo)
 TF_PROJECT_ID="${TF_ADMIN}-${RANDOMID}"
 
-# TODO check if folder exist - gcloud alpha resource-manager folders list --organization ${TF_VAR_org_id}
+# TODO check if folder exist e.g. gcloud alpha resource-manager folders list --organization ${TF_VAR_org_id}
 echo "INFO: Attempting to create folder ${TF_FOLDER} for admin project '${TF_PROJECT_ID}' :"
 FULL_FOLDER_ID=$(gcloud alpha resource-manager folders create \
    --display-name=${TF_FOLDER} \
@@ -116,6 +116,15 @@ gcloud projects add-iam-policy-binding ${TF_PROJECT_ID} \
   --member serviceAccount:${SERVICE_ACCOUNT}@${TF_PROJECT_ID}.iam.gserviceaccount.com \
   --role roles/storage.admin
 
+# set proper vars for TF init
+export GOOGLE_APPLICATION_CREDENTIALS=${TF_CREDS}
+export GOOGLE_PROJECT=${TF_PROJECT_ID}
+
+
+# change directory
+mkdir -p environments/$TF_ENV
+cd environments/$TF_ENV
+
 # generate backend TF file
 cat > backend.tf <<EOF
 terraform {
@@ -126,13 +135,7 @@ terraform {
 }
 EOF
 
-# set proper vars for TF init
-export GOOGLE_APPLICATION_CREDENTIALS=${TF_CREDS}
-export GOOGLE_PROJECT=${TF_PROJECT_ID}
-
 # generate TFVARS file for Terraform project
-mkdir -p environments/$TF_ENV
-cd environments/$TF_ENV
 cat << EOF >> $TF_ENV.tfvars
 env = "$TF_ENV"
 region = "$GOOGLE_REGION"
