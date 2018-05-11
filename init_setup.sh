@@ -148,8 +148,6 @@ admin_project = "$TF_PROJECT_ID"
 
 EOF
 
-exit 0
-
 # ...and run TF init
 terraform init
 
