@@ -20,18 +20,23 @@ Objectives:
 Create GCP environment file in your home directory called `~/.gcp_env` with the following content
 
 ```
-export GOOGLE_REGION=northamerica-northeast1  # whichever region you prefer
+export GOOGLE_REGION=<your GCP region>  # whichever region you prefer e.g. northamerica-northeast1
+export TF_ENV=<your environment e.g. dev, test, prod>
 export TF_VAR_org_id=<this is your org id>
 export TF_VAR_billing_account=<this is your billing account>
 export TF_VAR_region=${GOOGLE_REGION}
 export TF_VAR_user=${USER}
-export TF_VAR_ssh_key=~/.ssh/dev_key.pub  # for example
+export TF_VAR_ssh_key=<pub key>  # pub key file e.g. ~/.ssh/dev_key.pub
+export TF_FOLDER=${TF_ENV}_projects
 export TF_ADMIN=tf-admin
 export TF_CREDS=~/.config/gcloud/tf-admin.json
 
 # and this two at the end before tf init
-export GOOGLE_PROJECT=${TF_PROJECT_ID}
 export GOOGLE_APPLICATION_CREDENTIALS=${TF_CREDS}
+
+export GOOGLE_ADMIN_DOMAIN=<your domain>
+export GOOGLE_ADMIN_ACCOUNT=<admin account of your domain>
+
 ```
 
 ## Step 2: clone repo
@@ -43,7 +48,7 @@ git clone https://github.com/OlegGorj/gcp-terraform-ws.git
 ## Step 3: Using GCP CLI create Host project, service account and generate Terraform code to store the state at the backend bucket
 
 ```
-cd gcp-terraform-ws/project1-gcp-cli/
+cd gcp-terraform-ws/
 
 ./init_setup.sh ~/.gcp_env
 ```
