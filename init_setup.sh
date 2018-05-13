@@ -136,7 +136,7 @@ terraform {
 EOF
 
 # generate TFVARS file for Terraform project
-cat << EOF >> $TF_ENV.tfvars
+cat << EOF > $TF_ENV.tfvars
 env = "$TF_ENV"
 region = "$GOOGLE_REGION"
 billing_account = "$TF_VAR_billing_account"
