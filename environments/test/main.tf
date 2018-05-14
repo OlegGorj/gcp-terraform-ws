@@ -1,8 +1,10 @@
 # vars
 variable "env" {
-  default = ""
+  default = "test"
 }
 variable "region" {
+}
+variable "region_zone" {
 }
 variable "billing_account" {
 }
@@ -19,6 +21,9 @@ variable "g_folder" {
   default = ""
 }
 variable "g_folder_id" {
+  default = ""
+}
+variable "source_ranges_ips" {
   default = ""
 }
 
@@ -88,7 +93,7 @@ resource "google_compute_shared_vpc_service_project" "service_2_project" {
 }
 
 # Create the hosted network.
-resource "google_compute_network" "shared_network" {
+resource "google_compute_network" "admin_shared_network" {
   name                    = "shared-network"
   auto_create_subnetworks = "true"
   project                 = "${var.admin_project}"
@@ -100,10 +105,10 @@ resource "google_compute_network" "shared_network" {
 }
 
 # Allow the hosted network to be hit over ICMP, SSH, and HTTP.
-resource "google_compute_firewall" "shared_network" {
+resource "google_compute_firewall" "admin_shared_network" {
   name    = "allow-ssh-and-icmp"
-  network = "${google_compute_network.shared_network.self_link}"
-  project = "${google_compute_network.shared_network.project}"
+  network = "${google_compute_network.admin_shared_network.self_link}"
+  project = "${google_compute_network.admin_shared_network.project}"
 
   allow {
     protocol = "icmp"
@@ -113,6 +118,17 @@ resource "google_compute_firewall" "shared_network" {
     protocol = "tcp"
     ports    = ["22", "80"]
   }
+  source_ranges = ["${var.source_ranges_ips}"]
+}
+
+# Create VM instances for each project
+module "service_1_vm1" {
+  source          = "../../modules/instance/compute"
+  name            = "service_1_vm1"
+  project         = "${module.service_1_project.project_id}"
+  zone    = "${var.region_zone}"
+  network = "${google_compute_network.admin_shared_network.self_link}"
+
 }
 
 
