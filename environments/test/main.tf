@@ -46,7 +46,7 @@ module "service_1_project" {
   billing_account = "${var.billing_account}"
   org_id          = "${var.org_id}"
   folder_id       = "${var.g_folder_id}"
-  domain = "${var.domain}"
+  domain          = "${var.domain}"
 }
 
 module "service_2_project" {
@@ -106,7 +106,7 @@ resource "google_compute_network" "admin_shared_network" {
 
 # Allow the hosted network to be hit over ICMP, SSH, and HTTP.
 resource "google_compute_firewall" "admin_shared_network" {
-  name    = "allow-ssh-and-icmp"
+  name    = "allow-ssh-icmp-http"
   network = "${google_compute_network.admin_shared_network.self_link}"
   project = "${google_compute_network.admin_shared_network.project}"
 
@@ -122,14 +122,18 @@ resource "google_compute_firewall" "admin_shared_network" {
 }
 
 # Create VM instances for each project
-module "service_1_vm1" {
-  source          = "../../modules/instance/compute"
-  name            = "service_1_vm1"
-  project         = "${module.service_1_project.project_id}"
-  zone    = "${var.region_zone}"
-  network = "${google_compute_network.admin_shared_network.self_link}"
-
+module "devops_instance_vm1" {
+  source                = "../../modules/instance/compute"
+  name                  = "devops-instance-vm1"
+  project               = "${module.service_1_project.project_id}"
+  zone                  = "${var.region_zone}"
+  network               = "${google_compute_network.admin_shared_network.self_link}"
+  startup_script        = "VM_NAME=VM1\n${file("../../modules/instance/compute/scripts/install_vm.sh")}"
+  instance_tags         = ["devops", "debian-8", "${var.env}", "apache2"]
+  environment           = "${var.env}"
+  instance_description  = "VM Instance dedicated to Devops"
 }
+
 
 
 ##
