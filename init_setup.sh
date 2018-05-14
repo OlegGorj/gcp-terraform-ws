@@ -136,27 +136,26 @@ terraform {
 EOF
 
 # generate TFVARS file for Terraform project
-cat << EOF >> $TF_ENV.tfvars
+cat << EOF > $TF_ENV.tfvars
 env = "$TF_ENV"
 region = "$GOOGLE_REGION"
 billing_account = "$TF_VAR_billing_account"
 org_id = "$TF_VAR_org_id"
-domain = "$GOOGLE_DOMAIN"
+domain = "$GOOGLE_ADMIN_DOMAIN"
+admin_account="$GOOGLE_ADMIN_ACCOUNT"
 g_folder = "$FULL_FOLDER_ID"
 g_folder_id = "$FOLDER_ID"
 admin_project = "$TF_PROJECT_ID"
 
 EOF
 
-exit 0
-
 # ...and run TF init
-terraform init
+#terraform init
 
 # ...followed by TF plan
-terraform plan
+#terraform plan
 
 # clean up
-gcloud auth login --activate ${GOOGLE_ADMIN_ACCOUNT}
+#gcloud auth login --activate ${GOOGLE_ADMIN_ACCOUNT}
 
 # the end :)
