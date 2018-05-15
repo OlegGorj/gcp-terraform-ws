@@ -28,6 +28,10 @@ variable "instance_description" {
 
 # Resources
 # Create a VM which hosts a web page stating its identity ("VM1")
+#data "google_compute_image" "ubuntu-xenial" {
+#  family = "ubuntu-1604-lts"
+#  project = "ubuntu-os-cloud"
+#}
 resource "google_compute_instance" "instance" {
   description = "description assigned to instances"
 
@@ -38,7 +42,9 @@ resource "google_compute_instance" "instance" {
 
   boot_disk {
     initialize_params {
-      image = "projects/debian-cloud/global/images/family/debian-8"
+      #image = "projects/debian-cloud/global/images/family/debian-8"
+      #image = "${data.google_compute_image.ubuntu.self_link}"
+      image = "ubuntu-1604-lts"
     }
   }
 #  metadata_startup_script = "VM_NAME=VM1\n${file("../../modules/instance/compute/scripts/install-vm.sh")}"
@@ -51,7 +57,7 @@ resource "google_compute_instance" "instance" {
   }
 
   service_account {
-    scopes = ["https://www.googleapis.com/auth/compute.readonly"]
+    scopes = ["https://www.googleapis.com/auth/compute.readonly", "storage-ro"]
   }
 
   metadata {
