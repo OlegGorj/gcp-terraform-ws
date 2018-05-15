@@ -27,17 +27,9 @@ variable "source_ranges_ips" {
   default = ""
 }
 
-# resources
-#module "host_project" {
-#  source          = "../../modules/project"
-#  name            = "host-project"
-#  region          = "${var.region}"
-#  billing_account = "${var.billing_account}"
-#  org_id          = "${var.org_id}"
-#  domain = "${var.domain}"
-#  create_folder = true
-#}
-
+###############################################################################
+# RESOURCES
+###############################################################################
 
 module "service_1_project" {
   source          = "../../modules/project"
@@ -134,6 +126,40 @@ module "devops_instance_vm1" {
   instance_description  = "VM Instance dedicated to Devops"
 }
 
+data "template_file" "docker_init_script" {
+  template = "${file("${path.module}/../../modules/instance/compute/scripts/docker_install.sh")}"
+  vars {
+      TERRAFORM_user      = "ubuntu"
+  }
+}
+data "template_file" "ngnix_init_script" {
+  template = "${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"
+  vars {
+      TERRAFORM_user      = "ubuntu"
+  }
+}
+data "template_cloudinit_config" "webserver_init" {
+  part {
+    content_type = "text/x-shellscript"
+    content      = "${data.template_file.docker_init_script.rendered}"
+  }
+  part {
+    content_type = "text/x-shellscript"
+    content      = "${data.template_file.ngnix_init_script.rendered}"
+  }
+}
+module "devops_instance_vm2" {
+  source                = "../../modules/instance/compute"
+  name                  = "devops-instance-vm2"
+  project               = "${module.service_2_project.project_id}"
+  zone                  = "${var.region_zone}"
+  network               = "${google_compute_network.admin_shared_network.self_link}"
+  startup_script        = "TERRAFORM_user=ubuntu\n${file("${path.module}/../../modules/instance/compute/scripts/docker_install.sh")}\n${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"
+#  startup_script        = "${data.template_cloudinit_config.webserver_init.rendered}"
+  instance_tags         = ["devops", "debian-8", "ubuntu", "1604", "${var.env}", "apache2"]
+  environment           = "${var.env}"
+  instance_description  = "VM Instance dedicated to Devops"
+}
 
 
 ##
