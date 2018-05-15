@@ -1,3 +1,7 @@
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/4b6ede56298049ec87e5c0556304aec9)](https://app.codacy.com/app/oleggorj/gcp-terraform-ws?utm_source=github.com&utm_medium=referral&utm_content=OlegGorj/gcp-terraform-ws&utm_campaign=badger)
+[![GitHub Issues](https://img.shields.io/github/issues/OlegGorJ/gcp-terraform-ws.svg)](https://github.com/OlegGorJ/gcp-terraform-ws/issues)
+[![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/OlegGorJ/gcp-terraform-ws.svg)](http://isitmaintained.com/project/OlegGorJ/gcp-terraform-ws "Average time to resolve an issue")
+[![Percentage of issues still open](http://isitmaintained.com/badge/open/OlegGorJ/gcp-terraform-ws.svg)](http://isitmaintained.com/project/OlegGorJ/gcp-terraform-ws "Percentage of issues still open")
 
 # GCP infrastructure and services with Terraform
 
