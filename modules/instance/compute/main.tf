@@ -27,11 +27,10 @@ variable "instance_description" {
 }
 
 # Resources
-# Create a VM which hosts a web page stating its identity ("VM1")
-#data "google_compute_image" "ubuntu-xenial" {
-#  family = "ubuntu-1604-lts"
-#  project = "ubuntu-os-cloud"
-#}
+data "google_compute_image" "cos_cloud" {
+  family = "cos-stable"
+  project = "cos-cloud"
+}
 resource "google_compute_instance" "instance" {
   description = "description assigned to instances"
 
@@ -42,12 +41,9 @@ resource "google_compute_instance" "instance" {
 
   boot_disk {
     initialize_params {
-      #image = "projects/debian-cloud/global/images/family/debian-8"
-      #image = "${data.google_compute_image.ubuntu.self_link}"
-      image = "ubuntu-1604-lts"
+      image = "${data.google_compute_image.cos_cloud.self_link}"
     }
   }
-#  metadata_startup_script = "VM_NAME=VM1\n${file("../../modules/instance/compute/scripts/install-vm.sh")}"
   metadata_startup_script = "${var.startup_script}"
   network_interface {
     network = "${var.network}"
