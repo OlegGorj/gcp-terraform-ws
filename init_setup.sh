@@ -135,6 +135,7 @@ terraform {
 }
 EOF
 
+ALLOWED_IP_RANGE=$(curl ifconfig.co)
 # generate TFVARS file for Terraform project
 cat << EOF > $TF_ENV.tfvars
 env = "$TF_ENV"
@@ -146,6 +147,7 @@ admin_account="$GOOGLE_ADMIN_ACCOUNT"
 g_folder = "$FULL_FOLDER_ID"
 g_folder_id = "$FOLDER_ID"
 admin_project = "$TF_PROJECT_ID"
+source_ranges_ips = "$ALLOWED_IP_RANGE/32"
 
 EOF
 
