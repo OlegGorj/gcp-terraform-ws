@@ -23,12 +23,18 @@ gcloud alpha billing accounts list
 RANDOMID=$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 8 ; echo)
 TF_PROJECT_ID="${TF_ADMIN}-${RANDOMID}"
 
-# TODO check if folder exist e.g. gcloud alpha resource-manager folders list --organization ${TF_VAR_org_id}
-echo "INFO: Attempting to create folder ${TF_FOLDER} for admin project '${TF_PROJECT_ID}' :"
-FULL_FOLDER_ID=$(gcloud alpha resource-manager folders create \
-   --display-name=${TF_FOLDER} \
-   --organization ${TF_VAR_org_id} \
-   --format="value(name)")
+# TODO check if folder exist e.g.
+
+FOLDER_CHECK=$(gcloud alpha resource-manager folders list --organization ${TF_VAR_org_id} | grep ${TF_FOLDER} )
+if [[ -z "${FOLDER_CHECK// }" ]]; then
+  echo "INFO: Folder ${TF_FOLDER} already exist as part of admin project '${TF_PROJECT_ID}' :"
+else
+  echo "INFO: Attempting to create folder ${TF_FOLDER} for admin project '${TF_PROJECT_ID}' :"
+  FULL_FOLDER_ID=$(gcloud alpha resource-manager folders create \
+     --display-name=${TF_FOLDER} \
+     --organization ${TF_VAR_org_id} \
+     --format="value(name)")
+fi
 
 FOLDER_ID=$(echo $FULL_FOLDER_ID | sed 's/folders\///')
 echo "INFO: Folder ID: ${FOLDER_ID} "

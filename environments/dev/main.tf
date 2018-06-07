@@ -1,6 +1,6 @@
 # vars
 variable "env" {
-  default = "test"
+  default = "dev"
 }
 variable "region" {
 }
