@@ -1,6 +1,5 @@
 # vars
 variable "env" {
-  default = "dev"
 }
 variable "region" {
 }
@@ -31,7 +30,7 @@ variable "source_ranges_ips" {
 # RESOURCES
 ###############################################################################
 
-module "service_1_project" {
+module "devops_project_1" {
   source          = "../../modules/project"
   name            = "service-prj-1-${var.env}"
   region          = "${var.region}"
@@ -41,7 +40,7 @@ module "service_1_project" {
   domain          = "${var.domain}"
 }
 
-module "service_2_project" {
+module "devops_project_2" {
   source          = "../../modules/project"
   name            = "service-prj-2-${var.env}"
   region          = "${var.region}"
@@ -57,44 +56,60 @@ resource "google_compute_shared_vpc_host_project" "host_project" {
 
 # Enable shared VPC in the two service projects and services need to be enabled on all new projects
 # Service project #1
-resource "google_project_service" "service_1_project" {
-  project = "${module.service_1_project.project_id}"
+resource "google_project_service" "devops_project_1" {
+  project = "${module.devops_project_1.project_id}"
   service = "compute.googleapis.com"
 }
-resource "google_compute_shared_vpc_service_project" "service_1_project" {
+resource "google_compute_shared_vpc_service_project" "devops_project_1" {
   host_project    = "${var.admin_project}"
-  service_project = "${module.service_1_project.project_id}"
+  service_project = "${module.devops_project_1.project_id}"
 
   depends_on = [
-    "module.service_1_project"
+    "module.devops_project_1"
   ]
 }
 
 # Service project #2
-resource "google_project_service" "service_2_project" {
-  project = "${module.service_2_project.project_id}"
+resource "google_project_service" "devops_project_2" {
+  project = "${module.devops_project_2.project_id}"
   service = "compute.googleapis.com"
 }
-resource "google_compute_shared_vpc_service_project" "service_2_project" {
+resource "google_compute_shared_vpc_service_project" "devops_project_2" {
   host_project    = "${var.admin_project}"
-  service_project = "${module.service_2_project.project_id}"
+  service_project = "${module.devops_project_2.project_id}"
 
   depends_on = [
-    "module.service_2_project"
+    "module.devops_project_2"
   ]
 }
 
 # Create the hosted network.
-resource "google_compute_network" "admin_shared_network" {
-  name                    = "shared-network"
-  auto_create_subnetworks = "true"
-  project                 = "${var.admin_project}"
-
-  depends_on = [
-    "module.service_1_project",
-    "module.service_2_project"
-  ]
+#resource "google_compute_network" "devops_shared_network" {
+#  name                    = "devops-compute-network"
+#  auto_create_subnetworks = "false"
+#  project                 = "${var.admin_project}"
+#
+#  depends_on = [
+#    "module.devops_project_1",
+#    "module.devops_project_2"
+#  ]
+#}
+module "devops_shared_network" {
+  source                    = "../../modules/network/compute_network"
+  name                      = "devops-compute-network"
+  project                   = "${var.admin_project}"
+  auto_create_subnetworks   = "false"
 }
+module "devops_subnet_1" {
+  source                    = "../../modules/network/subnet"
+  name                      = "devops-subnet-1"
+  project                   = "${var.admin_project}"
+  region                    = "${var.region_zone}"
+  network                   = "${module.devops_shared_network.self_link}"
+  ip_cidr_range             = "10.0.0.0/24"
+}
+
+
 
 # Allow the hosted network to be hit over ICMP, SSH, and HTTP.
 resource "google_compute_firewall" "admin_shared_network" {
@@ -118,7 +133,7 @@ resource "google_compute_firewall" "admin_shared_network" {
 module "devops_instance_vm1" {
   source                = "../../modules/instance/compute"
   name                  = "devops-instance-vm1"
-  project               = "${module.service_1_project.project_id}"
+  project               = "${module.devops_project_1.project_id}"
   zone                  = "${var.region_zone}"
   network               = "${google_compute_network.admin_shared_network.self_link}"
   startup_script        = "VM_NAME=VM1\n${file("../../modules/instance/compute/scripts/install_vm.sh")}"
@@ -165,7 +180,7 @@ data "template_cloudinit_config" "ngnix_init" {
 module "devops_instance_vm2" {
   source                = "../../modules/instance/compute"
   name                  = "devops-instance-vm2"
-  project               = "${module.service_2_project.project_id}"
+  project               = "${module.devops_project_2.project_id}"
   zone                  = "${var.region_zone}"
   network               = "${google_compute_network.admin_shared_network.self_link}"
 #  startup_script        = "TERRAFORM_user=ubuntu\n${file("${path.module}/../../modules/instance/compute/scripts/docker_install.sh")}\n${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"

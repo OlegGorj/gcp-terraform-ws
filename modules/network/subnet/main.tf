@@ -14,6 +14,7 @@ resource "google_compute_subnetwork" "subnet" {
   region        = "${var.region}"
   network       = "${var.network}"
   ip_cidr_range = "${var.ip_range}"
+//  depends_on    = ["${var.network}"]
 }
 
 # outputs
@@ -23,4 +24,3 @@ output "ip_range" {
 output "self_link" {
   value = "${google_compute_subnetwork.subnet.self_link}"
 }
-

@@ -23,8 +23,6 @@ gcloud alpha billing accounts list
 RANDOMID=$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 8 ; echo)
 TF_PROJECT_ID="${TF_ADMIN}-${RANDOMID}"
 
-# TODO check if folder exist e.g.
-
 FOLDER_CHECK=$(gcloud alpha resource-manager folders list --organization ${TF_VAR_org_id} | grep ${TF_FOLDER} )
 if [[ -z "${FOLDER_CHECK// }" ]]; then
   echo "INFO: Folder ${TF_FOLDER} already exist as part of admin project '${TF_PROJECT_ID}' :"
@@ -141,6 +139,7 @@ terraform {
 }
 EOF
 
+# get ip of this machine
 ALLOWED_IP_RANGE=$(curl ifconfig.co)
 # generate TFVARS file for Terraform project
 cat << EOF > $TF_ENV.tfvars
