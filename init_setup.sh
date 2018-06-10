@@ -153,6 +153,7 @@ g_folder = "$FULL_FOLDER_ID"
 g_folder_id = "$FOLDER_ID"
 admin_project = "$TF_PROJECT_ID"
 source_ranges_ips = "$ALLOWED_IP_RANGE/32"
+tf_ssh_key = "$TF_VAR_ssh_key"
 
 EOF
 

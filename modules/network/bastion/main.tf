@@ -4,10 +4,23 @@ variable "name" {}
 variable "project" {}
 variable "zones" { type = "list" }
 variable "subnet_name" {}
-variable "image" {}
-variable "instance_type" {}
+#variable "image" {}
+variable "instance_type" {
+  default = "f1-micro"
+}
 variable "user" {}
 variable "ssh_key" {}
+variable "environment" {
+  default = ""
+}
+variable "instance_description" {
+  default = "Bastion instance"
+}
+
+data "google_compute_image" "cos_cloud" {
+  family = "cos-stable"
+  project = "cos-cloud"
+}
 
 # main.tf
 resource "google_compute_instance" "bastion" {
@@ -22,9 +35,14 @@ resource "google_compute_instance" "bastion" {
 
   boot_disk {
     initialize_params {
-      image = "${var.image}"
+      image = "${data.google_compute_image.cos_cloud.self_link}"
     }
   }
+#  boot_disk {
+#    initialize_params {
+#      image = "${var.image}"
+#    }
+#  }
 
   network_interface {
     subnetwork = "${var.subnet_name}"
@@ -45,4 +63,3 @@ output "private_ip" {
 output "public_ip" {
   value = "${google_compute_instance.bastion.network_interface.0.access_config.0.assigned_nat_ip}"
 }
-

@@ -12,6 +12,9 @@ variable "org_id" {
 variable "credentials_file_path" {
   default = ""
 }
+variable "tf_ssh_key" {
+  default = ""
+}
 variable "domain" {
 }
 variable "admin_project" {
@@ -107,6 +110,7 @@ module "devops_subnet_1" {
   region                    = "${var.region_zone}"
   network                   = "${module.devops_shared_network.self_link}"
   ip_cidr_range             = "10.0.0.0/24"
+  depends_on              = ["${module.devops_shared_network}"]
 }
 
 
@@ -127,6 +131,20 @@ resource "google_compute_firewall" "admin_shared_network" {
   }
   source_ranges = ["${var.source_ranges_ips}"]
 }
+
+module "bastion_instance" {
+  source                = "../../modules/network/bastion"
+  name                  = "bastion-instance"
+  project               = "${module.devops_project_1.project_id}"
+  zones                 = ["${var.region_zone}"]
+  subnet_name           = "${google_compute_network.devops_shared_network.self_link}"
+  user                  = "ubuntu"
+  ssh_key               = "${var.tf_ssh_key}"
+  environment           = "${var.env}"
+}
+
+# TODO: fw rules to allow ssh access to other instances only from bastion
+
 
 # Create VM instances for each project
 # Instance #1
