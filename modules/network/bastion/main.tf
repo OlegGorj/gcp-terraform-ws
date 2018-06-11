@@ -3,15 +3,15 @@
 variable "name" {}
 variable "project" {}
 variable "zones" { type = "list" }
-variable "subnet_name" {}
-#variable "image" {}
+variable "subnetwork" {}
+variable "domain" {}
 variable "instance_type" {
   default = "f1-micro"
 }
 
 variable "ssh_user" {}
 variable "ssh_key" {}
-varibale "ssh_private_key_file" {}
+variable "ssh_private_key_file" {}
 
 variable "environment" {
   default = ""
@@ -32,10 +32,6 @@ resource "google_compute_instance" "bastion" {
   machine_type = "${var.instance_type}"
   zone         = "${element(var.zones, 0)}"
 
-  metadata {
-    ssh-keys = "${var.ssh_user}:${file("${var.ssh_key}")}"
-  }
-
   boot_disk {
     initialize_params {
       image = "${data.google_compute_image.cos_cloud.self_link}"
@@ -48,7 +44,7 @@ resource "google_compute_instance" "bastion" {
 #  }
 
   network_interface {
-    subnetwork = "${var.subnet_name}"
+    subnetwork = "${var.subnetwork}"
     access_config {
       # Ephemeral IP - leaving this block empty will generate a new external IP and assign it to the machine
     }
@@ -59,12 +55,10 @@ resource "google_compute_instance" "bastion" {
   }
 
   metadata {
-    mastercount = "${var.masters}"
-    clustername = "${var.name}"
+    ssh-keys = "${var.ssh_user}:${file("${var.ssh_key}")}"
     myid = "${count.index}"
     domain = "${var.domain}"
     subnetwork = "${var.subnetwork}"
-    mesosversion = "${var.mesos_version}"
   }
   # define default connection for remote provisioners
   connection {

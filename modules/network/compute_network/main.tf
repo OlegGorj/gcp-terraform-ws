@@ -7,7 +7,7 @@ variable "auto_create_subnetworks" { default = "false" }
 
 
 # Create a standalone network with the same firewall rules.
-resource "google_compute_network" "standalone_network" {
+resource "google_compute_network" "network" {
   name                    = "${var.name}"
   auto_create_subnetworks = "${var.auto_create_subnetworks}"
   project                 = "${var.project}"
@@ -16,8 +16,13 @@ resource "google_compute_network" "standalone_network" {
 
 # outputs
 output "ip_range" {
-  value = "${google_compute_subnetwork.subnet.ip_cidr_range}"
+  value = "${google_compute_network.network.ip_cidr_range}"
 }
+
 output "self_link" {
-  value = "${google_compute_subnetwork.subnet.self_link}"
+  value = "${google_compute_network.network.self_link}"
+}
+
+output "project" {
+  value = "${var.project}"
 }

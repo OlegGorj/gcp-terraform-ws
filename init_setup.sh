@@ -38,11 +38,6 @@ else
      --format="value(name)")
 fi
 
-echo "FULL_FOLDER_ID:  $FULL_FOLDER_ID"
-
-
-exit 0
-
 
 FOLDER_ID=$(echo $FULL_FOLDER_ID | sed 's/folders\///')
 echo "INFO: Folder ID: ${FOLDER_ID} "
@@ -144,7 +139,7 @@ cat > backend.tf <<EOF
 terraform {
  backend "gcs" {
    bucket = "${TF_PROJECT_ID}"
-   prefix  = "terraform/state/${$TF_ENV}"
+   prefix  = "terraform/state/${TF_ENV}"
  }
 }
 EOF
@@ -165,7 +160,6 @@ admin_project = "$TF_PROJECT_ID"
 source_ranges_ips = "$ALLOWED_IP_RANGE/32"
 tf_ssh_key = "$TF_VAR_ssh_key"
 tf_ssh_private_key_file = "$TF_VAR_ssh_private_key"
-
 EOF
 
 # ...and run TF init
