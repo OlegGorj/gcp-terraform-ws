@@ -15,6 +15,9 @@ variable "credentials_file_path" {
 variable "tf_ssh_key" {
   default = ""
 }
+variable "tf_ssh_private_key_file"{
+  default = ""
+}
 variable "domain" {
 }
 variable "admin_project" {
@@ -27,6 +30,9 @@ variable "g_folder_id" {
 }
 variable "source_ranges_ips" {
   default = ""
+}
+variable "devops_subnet_northamerica_northeast1_cidr" {
+  default = "10.0.0.0/16"
 }
 
 ###############################################################################
@@ -97,29 +103,31 @@ resource "google_compute_shared_vpc_service_project" "devops_project_2" {
 #    "module.devops_project_2"
 #  ]
 #}
+
 module "devops_shared_network" {
   source                    = "../../modules/network/compute_network"
-  name                      = "devops-compute-network"
+  name                      = "devops-shared-network"
   project                   = "${var.admin_project}"
   auto_create_subnetworks   = "false"
 }
-module "devops_subnet_1" {
+
+module "devops_subnet_northamerica_northeast1" {
   source                    = "../../modules/network/subnet"
   name                      = "devops-subnet-1"
   project                   = "${var.admin_project}"
-  region                    = "${var.region_zone}"
+  region                    = "northamerica-northeast1"
   network                   = "${module.devops_shared_network.self_link}"
-  ip_cidr_range             = "10.0.0.0/24"
+  ip_cidr_range             = "${var.devops_subnet_northamerica_northeast1_cidr}"
   depends_on              = ["${module.devops_shared_network}"]
 }
 
 
 
-# Allow the hosted network to be hit over ICMP, SSH, and HTTP.
-resource "google_compute_firewall" "admin_shared_network" {
-  name    = "allow-ssh-icmp-http"
-  network = "${google_compute_network.admin_shared_network.self_link}"
-  project = "${google_compute_network.admin_shared_network.project}"
+# Allow access DevOPS network only bastion instances  and limited source range
+resource "google_compute_firewall" "devops_network_ssh_bastion_fw" {
+  name    = "allow-ssh-icmp-http-devops_shared_network"
+  network = "${google_compute_network.devops_shared_network.self_link}"
+  project = "${google_compute_network.devops_shared_network.project}"
 
   allow {
     protocol = "icmp"
@@ -127,19 +135,43 @@ resource "google_compute_firewall" "admin_shared_network" {
 
   allow {
     protocol = "tcp"
-    ports    = ["22", "80"]
+    ports    = ["22"]
   }
+
   source_ranges = ["${var.source_ranges_ips}"]
+
+  target_tags = ["bastion"]
 }
+
+resource "google_compute_firewall" "devops_network_https_bastion_fw" {
+  name    = "allow-ssh-icmp-http-devops_shared_network"
+  network = "${google_compute_network.devops_shared_network.self_link}"
+  project = "${google_compute_network.devops_shared_network.project}"
+
+  allow {
+    protocol = "icmp"
+  }
+
+  allow {
+    protocol = "tcp"
+    ports    = ["443", "80", "8080", "8443"]
+  }
+
+  source_ranges = ["${var.source_ranges_ips}"]
+
+  target_tags = ["bastion"]
+}
+
 
 module "bastion_instance" {
   source                = "../../modules/network/bastion"
   name                  = "bastion-instance"
   project               = "${module.devops_project_1.project_id}"
   zones                 = ["${var.region_zone}"]
-  subnet_name           = "${google_compute_network.devops_shared_network.self_link}"
+  subnet_name           = "${google_compute_network.devops_subnet_northamerica_northeast1.self_link}"
   user                  = "ubuntu"
   ssh_key               = "${var.tf_ssh_key}"
+  ssh_private_key_file  = "${var.tf_ssh_private_key_file}"
   environment           = "${var.env}"
 }
 

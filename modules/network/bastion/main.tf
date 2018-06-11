@@ -8,8 +8,11 @@ variable "subnet_name" {}
 variable "instance_type" {
   default = "f1-micro"
 }
-variable "user" {}
+
+variable "ssh_user" {}
 variable "ssh_key" {}
+varibale "ssh_private_key_file" {}
+
 variable "environment" {
   default = ""
 }
@@ -30,7 +33,7 @@ resource "google_compute_instance" "bastion" {
   zone         = "${element(var.zones, 0)}"
 
   metadata {
-    ssh-keys = "${var.user}:${file("${var.ssh_key}")}"
+    ssh-keys = "${var.ssh_user}:${file("${var.ssh_key}")}"
   }
 
   boot_disk {
@@ -46,13 +49,30 @@ resource "google_compute_instance" "bastion" {
 
   network_interface {
     subnetwork = "${var.subnet_name}"
-
     access_config {
       # Ephemeral IP - leaving this block empty will generate a new external IP and assign it to the machine
     }
   }
 
-  tags = ["bastion"]
+  service_account {
+     scopes = ["userinfo-email", "compute-ro", "storage-ro"]
+  }
+
+  metadata {
+    mastercount = "${var.masters}"
+    clustername = "${var.name}"
+    myid = "${count.index}"
+    domain = "${var.domain}"
+    subnetwork = "${var.subnetwork}"
+    mesosversion = "${var.mesos_version}"
+  }
+  # define default connection for remote provisioners
+  connection {
+    type = "ssh"
+    user = "${var.ssh_user}"
+    private_key = "${file(var.ssh_private_key_file)}"
+  }
+  tags = ["bastion", "vpn"]
 }
 
 # Outputs
