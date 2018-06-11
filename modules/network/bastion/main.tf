@@ -2,7 +2,9 @@
 # Vars
 variable "name" {}
 variable "project" {}
-variable "zones" { type = "list" }
+variable "zones" {
+  type = "list"
+}
 variable "subnetwork" {}
 variable "domain" {}
 variable "instance_type" {

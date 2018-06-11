@@ -3,8 +3,6 @@ variable "env" {
 }
 variable "region" {
 }
-variable "region_zone" {
-}
 variable "billing_account" {
 }
 variable "org_id" {
@@ -31,9 +29,17 @@ variable "g_folder_id" {
 variable "source_ranges_ips" {
   default = ""
 }
-variable "devops_subnet1_northamerica_northeast1_cidr" {
+variable "devops_northamerica_northeast1_subnet1_cidr" {
   default = "10.0.0.0/16"
 }
+variable "devops_northamerica_northeast1_region" {
+  default = "northamerica-northeast1"
+}
+variable "region_zones" {
+  type = "list"
+  default = ["northamerica-northeast1-a"]
+}
+
 
 ###############################################################################
 # RESOURCES
@@ -111,13 +117,13 @@ module "devops_shared_network" {
   auto_create_subnetworks   = "false"
 }
 
-module "devops_subnet_northamerica_northeast1" {
+module "devops_northamerica_northeast1_subnet1" {
   source          = "../../modules/network/subnet"
-  name            = "devops-subnet-1"
+  name            = "${var.env}-${var.devops_northamerica_northeast1_region}-devops-subnet1"
   project         = "${var.admin_project}"
-  region          = "northamerica-northeast1"
+  region          = "${var.devops_northamerica_northeast1_region}"
   network         = "${module.devops_shared_network.self_link}"
-  ip_cidr_range   = "${var.devops_subnet1_northamerica_northeast1_cidr}"
+  ip_cidr_range   = "${var.devops_northamerica_northeast1_subnet1_cidr}"
 }
 
 
@@ -169,8 +175,8 @@ module "bastion_instance" {
   source                = "../../modules/network/bastion"
   name                  = "bastion-instance"
   project               = "${module.devops_project_1.project_id}"
-  zones                 = ["${var.region_zone}"]
-  subnetwork           = "${module.devops_subnet_northamerica_northeast1.self_link}"
+  zones                 = "${var.region_zones}"
+  subnetwork           = "${module.devops_northamerica_northeast1_subnet1.self_link}"
   ssh_user              = "ubuntu"
   ssh_key               = "${var.tf_ssh_key}"
   ssh_private_key_file  = "${var.tf_ssh_private_key_file}"
@@ -180,14 +186,13 @@ module "bastion_instance" {
 
 # TODO: fw rules to allow ssh access to other instances only from bastion
 
-
 # Create VM instances for each project
 # Instance #1
 module "devops_instance_vm1" {
   source                = "../../modules/instance/compute"
   name                  = "devops-instance-vm1"
   project               = "${module.devops_project_1.project_id}"
-  zone                  = "${var.region_zone}"
+  zone                  = "${element(var.region_zones, 0)}"
   network               = "${module.devops_shared_network.self_link}"
   startup_script        = "VM_NAME=VM1\n${file("../../modules/instance/compute/scripts/install_vm.sh")}"
   instance_tags         = ["devops", "debian-8", "${var.env}", "apache2"]
@@ -234,7 +239,7 @@ module "devops_instance_vm2" {
   source                = "../../modules/instance/compute"
   name                  = "devops-instance-vm2"
   project               = "${module.devops_project_2.project_id}"
-  zone                  = "${var.region_zone}"
+  zone                  = "${element(var.region_zones, 0)}"
   network               = "${module.devops_shared_network.self_link}"
 #  startup_script        = "TERRAFORM_user=ubuntu\n${file("${path.module}/../../modules/instance/compute/scripts/docker_install.sh")}\n${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"
 #  startup_script        = "${data.template_cloudinit_config.ngnix_init.rendered}"
