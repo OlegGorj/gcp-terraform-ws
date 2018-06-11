@@ -21,18 +21,28 @@ echo "INFO: Listing billing accounts:"
 gcloud alpha billing accounts list
 
 RANDOMID=$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 8 ; echo)
-TF_PROJECT_ID="${TF_ADMIN}-${RANDOMID}"
+TF_PROJECT_ID="${TF_ADMIN}-${TF_ENV}-${RANDOMID}"
 
-FOLDER_CHECK=$(gcloud alpha resource-manager folders list --organization ${TF_VAR_org_id} | grep ${TF_FOLDER} )
-if [[ -z "${FOLDER_CHECK// }" ]]; then
-  echo "INFO: Folder ${TF_FOLDER} already exist as part of admin project '${TF_PROJECT_ID}' :"
+echo "INFO: Checking if folder named ${TF_FOLDER} exists.. please stand by.. "
+#FOLDERS=$(gcloud alpha resource-manager folders list --organization ${TF_VAR_org_id} --format json | jq '.[] | .displayName')
+#FOLDER_CHECK=$(gcloud alpha resource-manager folders list --organization ${TF_VAR_org_id} --format json | jq '.[] | .displayName' | grep ${TF_FOLDER} )
+FULL_FOLDER_ID=$(gcloud alpha resource-manager folders list --organization ${TF_VAR_org_id} --format json | jq -r --arg TF_FOLDER "$TF_FOLDER" '.[] | select(.displayName==$TF_FOLDER ) | .name')
+
+if [[ ! -z "${FULL_FOLDER_ID}" ]]; then
+  echo "INFO: Folder '${TF_FOLDER}' with ID ${FULL_FOLDER_ID} already exist as part of the org '${TF_VAR_org_id}' :"
 else
-  echo "INFO: Attempting to create folder ${TF_FOLDER} for admin project '${TF_PROJECT_ID}' :"
+  echo "INFO: Attempting to create folder '${TF_FOLDER}' for the org '${TF_VAR_org_id}' :"
   FULL_FOLDER_ID=$(gcloud alpha resource-manager folders create \
      --display-name=${TF_FOLDER} \
      --organization ${TF_VAR_org_id} \
      --format="value(name)")
 fi
+
+echo "FULL_FOLDER_ID:  $FULL_FOLDER_ID"
+
+
+exit 0
+
 
 FOLDER_ID=$(echo $FULL_FOLDER_ID | sed 's/folders\///')
 echo "INFO: Folder ID: ${FOLDER_ID} "
@@ -134,7 +144,7 @@ cat > backend.tf <<EOF
 terraform {
  backend "gcs" {
    bucket = "${TF_PROJECT_ID}"
-   prefix  = "terraform/state/test"
+   prefix  = "terraform/state/${$TF_ENV}"
  }
 }
 EOF
@@ -154,6 +164,7 @@ g_folder_id = "$FOLDER_ID"
 admin_project = "$TF_PROJECT_ID"
 source_ranges_ips = "$ALLOWED_IP_RANGE/32"
 tf_ssh_key = "$TF_VAR_ssh_key"
+tf_ssh_private_key_file = "$TF_VAR_ssh_private_key"
 
 EOF
 
