@@ -1,6 +1,5 @@
 # vars
 variable "env" {
-  default = "test"
 }
 variable "region" {
 }
@@ -11,6 +10,12 @@ variable "billing_account" {
 variable "org_id" {
 }
 variable "credentials_file_path" {
+  default = ""
+}
+variable "tf_ssh_key" {
+  default = ""
+}
+variable "tf_ssh_private_key_file"{
   default = ""
 }
 variable "domain" {
@@ -26,12 +31,15 @@ variable "g_folder_id" {
 variable "source_ranges_ips" {
   default = ""
 }
+variable "devops_subnet1_northamerica_northeast1_cidr" {
+  default = "10.0.0.0/16"
+}
 
 ###############################################################################
 # RESOURCES
 ###############################################################################
 
-module "service_1_project" {
+module "devops_project_1" {
   source          = "../../modules/project"
   name            = "service-prj-1-${var.env}"
   region          = "${var.region}"
@@ -41,7 +49,7 @@ module "service_1_project" {
   domain          = "${var.domain}"
 }
 
-module "service_2_project" {
+module "devops_project_2" {
   source          = "../../modules/project"
   name            = "service-prj-2-${var.env}"
   region          = "${var.region}"
@@ -57,50 +65,68 @@ resource "google_compute_shared_vpc_host_project" "host_project" {
 
 # Enable shared VPC in the two service projects and services need to be enabled on all new projects
 # Service project #1
-resource "google_project_service" "service_1_project" {
-  project = "${module.service_1_project.project_id}"
+resource "google_project_service" "devops_project_1" {
+  project = "${module.devops_project_1.project_id}"
   service = "compute.googleapis.com"
 }
-resource "google_compute_shared_vpc_service_project" "service_1_project" {
+resource "google_compute_shared_vpc_service_project" "devops_project_1" {
   host_project    = "${var.admin_project}"
-  service_project = "${module.service_1_project.project_id}"
+  service_project = "${module.devops_project_1.project_id}"
 
   depends_on = [
-    "module.service_1_project"
+    "module.devops_project_1"
   ]
 }
 
 # Service project #2
-resource "google_project_service" "service_2_project" {
-  project = "${module.service_2_project.project_id}"
+resource "google_project_service" "devops_project_2" {
+  project = "${module.devops_project_2.project_id}"
   service = "compute.googleapis.com"
 }
-resource "google_compute_shared_vpc_service_project" "service_2_project" {
+resource "google_compute_shared_vpc_service_project" "devops_project_2" {
   host_project    = "${var.admin_project}"
-  service_project = "${module.service_2_project.project_id}"
+  service_project = "${module.devops_project_2.project_id}"
 
   depends_on = [
-    "module.service_2_project"
+    "module.devops_project_2"
   ]
 }
 
 # Create the hosted network.
-resource "google_compute_network" "admin_shared_network" {
-  name                    = "shared-network"
-  auto_create_subnetworks = "true"
-  project                 = "${var.admin_project}"
+#resource "google_compute_network" "devops_shared_network" {
+#  name                    = "devops-compute-network"
+#  auto_create_subnetworks = "false"
+#  project                 = "${var.admin_project}"
+#
+#  depends_on = [
+#    "module.devops_project_1",
+#    "module.devops_project_2"
+#  ]
+#}
 
-  depends_on = [
-    "module.service_1_project",
-    "module.service_2_project"
-  ]
+module "devops_shared_network" {
+  source                    = "../../modules/network/compute_network"
+  name                      = "devops-shared-network"
+  project                   = "${var.admin_project}"
+  auto_create_subnetworks   = "false"
 }
 
-# Allow the hosted network to be hit over ICMP, SSH, and HTTP.
-resource "google_compute_firewall" "admin_shared_network" {
-  name    = "allow-ssh-icmp-http"
-  network = "${google_compute_network.admin_shared_network.self_link}"
-  project = "${google_compute_network.admin_shared_network.project}"
+module "devops_subnet_northamerica_northeast1" {
+  source          = "../../modules/network/subnet"
+  name            = "devops-subnet-1"
+  project         = "${var.admin_project}"
+  region          = "northamerica-northeast1"
+  network         = "${module.devops_shared_network.self_link}"
+  ip_cidr_range   = "${var.devops_subnet1_northamerica_northeast1_cidr}"
+}
+
+
+
+# Allow access DevOPS network only bastion instances  and limited source range
+resource "google_compute_firewall" "devops_network_ssh_bastion_fw" {
+  name    = "allow-ssh-icmp-http-devops_shared_network"
+  network = "${module.devops_shared_network.self_link}"
+  project = "${module.devops_shared_network.project}"
 
   allow {
     protocol = "icmp"
@@ -108,19 +134,61 @@ resource "google_compute_firewall" "admin_shared_network" {
 
   allow {
     protocol = "tcp"
-    ports    = ["22", "80"]
+    ports    = ["22"]
   }
+
   source_ranges = ["${var.source_ranges_ips}"]
+
+  target_tags = ["bastion"]
 }
+
+resource "google_compute_firewall" "devops_network_https_bastion_fw" {
+  name    = "allow-ssh-icmp-http-devops_shared_network"
+  network = "${module.devops_shared_network.self_link}"
+  project = "${module.devops_shared_network.project}"
+
+  allow {
+    protocol = "icmp"
+  }
+
+  allow {
+    protocol = "tcp"
+    ports    = ["443", "80", "8080", "8443"]
+  }
+
+  source_ranges = ["${var.source_ranges_ips}"]
+
+  target_tags = ["bastion"]
+}
+
+# TODO: Internal Communication fw
+
+
+
+module "bastion_instance" {
+  source                = "../../modules/network/bastion"
+  name                  = "bastion-instance"
+  project               = "${module.devops_project_1.project_id}"
+  zones                 = ["${var.region_zone}"]
+  subnetwork           = "${module.devops_subnet_northamerica_northeast1.self_link}"
+  ssh_user              = "ubuntu"
+  ssh_key               = "${var.tf_ssh_key}"
+  ssh_private_key_file  = "${var.tf_ssh_private_key_file}"
+  environment           = "${var.env}"
+  domain    = "${var.domain}"
+}
+
+# TODO: fw rules to allow ssh access to other instances only from bastion
+
 
 # Create VM instances for each project
 # Instance #1
 module "devops_instance_vm1" {
   source                = "../../modules/instance/compute"
   name                  = "devops-instance-vm1"
-  project               = "${module.service_1_project.project_id}"
+  project               = "${module.devops_project_1.project_id}"
   zone                  = "${var.region_zone}"
-  network               = "${google_compute_network.admin_shared_network.self_link}"
+  network               = "${module.devops_shared_network.self_link}"
   startup_script        = "VM_NAME=VM1\n${file("../../modules/instance/compute/scripts/install_vm.sh")}"
   instance_tags         = ["devops", "debian-8", "${var.env}", "apache2"]
   environment           = "${var.env}"
@@ -165,9 +233,9 @@ data "template_cloudinit_config" "ngnix_init" {
 module "devops_instance_vm2" {
   source                = "../../modules/instance/compute"
   name                  = "devops-instance-vm2"
-  project               = "${module.service_2_project.project_id}"
+  project               = "${module.devops_project_2.project_id}"
   zone                  = "${var.region_zone}"
-  network               = "${google_compute_network.admin_shared_network.self_link}"
+  network               = "${module.devops_shared_network.self_link}"
 #  startup_script        = "TERRAFORM_user=ubuntu\n${file("${path.module}/../../modules/instance/compute/scripts/docker_install.sh")}\n${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"
 #  startup_script        = "${data.template_cloudinit_config.ngnix_init.rendered}"
   startup_script        = "TERRAFORM_user=ubuntu\n${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"
