@@ -44,6 +44,11 @@ variable "region_zones" {
 ###############################################################################
 # RESOURCES
 ###############################################################################
+resource "google_dns_managed_zone" "dns-zone" {
+  name        = "root-domain"
+  dns_name    = "${var.domain}"
+  description = "DNS zone"
+}
 
 module "devops_project_1" {
   source          = "../../modules/project"
@@ -137,7 +142,6 @@ resource "google_compute_firewall" "devops_network_ssh_bastion_fw" {
   allow {
     protocol = "icmp"
   }
-
   allow {
     protocol = "tcp"
     ports    = ["22"]
@@ -184,70 +188,104 @@ module "bastion_instance" {
   domain    = "${var.domain}"
 }
 
-# TODO: fw rules to allow ssh access to other instances only from bastion
+# allow ssh access to other instances only from bastion
+# Allow access DevOPS network only bastion instances  and limited source range
+resource "google_compute_firewall" "devops_network_internal_fw" {
+  name    = "allow-all-internal-devops_shared_network"
+  network = "${module.devops_shared_network.self_link}"
+  project = "${module.devops_shared_network.project}"
 
-# Create VM instances for each project
-# Instance #1
-module "devops_instance_vm1" {
-  source                = "../../modules/instance/compute"
-  name                  = "devops-instance-vm1"
-  project               = "${module.devops_project_1.project_id}"
-  zone                  = "${element(var.region_zones, 0)}"
-  network               = "${module.devops_shared_network.self_link}"
-  startup_script        = "VM_NAME=VM1\n${file("../../modules/instance/compute/scripts/install_vm.sh")}"
-  instance_tags         = ["devops", "debian-8", "${var.env}", "apache2"]
-  environment           = "${var.env}"
-  instance_description  = "VM Instance dedicated to Devops"
+  allow {
+      protocol = "tcp"
+      ports = ["1-65535"]
+  }
+  allow {
+      protocol = "udp"
+      ports = ["1-65535"]
+  }
+  allow {
+      protocol = "icmp"
+  }
+
+  source_ranges = ["${module.devops_northamerica_northeast1_subnet1.ip_range}"]
 }
 
-# Instance #2 - ngnix on docker
-data "template_file" "docker_init_script" {
-  template = "${file("${path.module}/../../modules/instance/compute/scripts/docker_install.sh")}"
-  vars {
-      TERRAFORM_user      = "ubuntu"
-  }
-}
-data "template_file" "ngnix_init_script" {
-  template = "${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"
-  vars {
-      TERRAFORM_user      = "ubuntu"
-  }
-}
-data "template_file" "ngnix_init_cc_config" {
-  template = "${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.yml")}"
-  vars {
-      TERRAFORM_user      = "ubuntu"
-  }
-}
-data "template_cloudinit_config" "webserver_init" {
-  part {
-    content_type = "text/x-shellscript"
-    content      = "${data.template_file.ngnix_init_script.rendered}"
-  }
-}
-data "template_cloudinit_config" "ngnix_init" {
-  gzip          = false
-  base64_encode = false
+resource "google_compute_firewall" "devops_network_vpn_fw" {
+  name    = "allow-vpn-devops_shared_network"
+  network = "${module.devops_shared_network.self_link}"
 
-  part {
-    filename     = "ngnix_install.yml"
-    content_type = "text/cloud-config"
-    content    = "${data.template_file.ngnix_init_cc_config.rendered}"
-  }
+    allow {
+        protocol = "udp"
+        ports = ["1194"]
+    }
+
+    target_tags = ["vpn"]
+    source_ranges = ["0.0.0.0/0"]
 }
-module "devops_instance_vm2" {
-  source                = "../../modules/instance/compute"
-  name                  = "devops-instance-vm2"
-  project               = "${module.devops_project_2.project_id}"
-  zone                  = "${element(var.region_zones, 0)}"
-  network               = "${module.devops_shared_network.self_link}"
-#  startup_script        = "TERRAFORM_user=ubuntu\n${file("${path.module}/../../modules/instance/compute/scripts/docker_install.sh")}\n${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"
-#  startup_script        = "${data.template_cloudinit_config.ngnix_init.rendered}"
-  startup_script        = "TERRAFORM_user=ubuntu\n${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"
-  instance_tags         = ["devops", "ngnix", "ubuntu-1604", "${var.env}", "docker"]
-  environment           = "${var.env}"
-  instance_description  = "VM Instance dedicated to Devops"
-}
+
+
+## Create VM instances for each project
+## Instance #1
+#module "devops_instance_vm1" {
+#  source                = "../../modules/instance/compute"
+#  name                  = "devops-instance-vm1"
+#  project               = "${module.devops_project_1.project_id}"
+#  zone                  = "${element(var.region_zones, 0)}"
+#  network               = "${module.devops_shared_network.self_link}"
+#  startup_script        = "VM_NAME=VM1\n${file("../../modules/instance/compute/scripts/install_vm.sh")}"
+#  instance_tags         = ["devops", "debian-8", "${var.env}", "apache2"]
+#  environment           = "${var.env}"
+#  instance_description  = "VM Instance dedicated to Devops"
+#}
+#
+## Instance #2 - ngnix on docker
+#data "template_file" "docker_init_script" {
+#  template = "${file("${path.module}/../../modules/instance/compute/scripts/docker_install.sh")}"
+#  vars {
+#      TERRAFORM_user      = "ubuntu"
+#  }
+#}
+#data "template_file" "ngnix_init_script" {
+#  template = "${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"
+#  vars {
+#      TERRAFORM_user      = "ubuntu"
+#  }
+#}
+#data "template_file" "ngnix_init_cc_config" {
+#  template = "${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.yml")}"
+#  vars {
+#      TERRAFORM_user      = "ubuntu"
+#  }
+#}
+#data "template_cloudinit_config" "webserver_init" {
+#  part {
+#    content_type = "text/x-shellscript"
+#    content      = "${data.template_file.ngnix_init_script.rendered}"
+#  }
+#}
+#data "template_cloudinit_config" "ngnix_init" {
+#  gzip          = false
+#  base64_encode = false
+#
+#  part {
+#    filename     = "ngnix_install.yml"
+#    content_type = "text/cloud-config"
+#    content    = "${data.template_file.ngnix_init_cc_config.rendered}"
+#  }
+#}
+#module "devops_instance_vm2" {
+#  source                = "../../modules/instance/compute"
+#  name                  = "devops-instance-vm2"
+#  project               = "${module.devops_project_2.project_id}"
+#  zone                  = "${element(var.region_zones, 0)}"
+#  network               = "${module.devops_shared_network.self_link}"
+##  startup_script        = "TERRAFORM_user=ubuntu\n${file("${path.module}/../../modules/instance/compute/scripts/docker_install.sh")}\n${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"
+##  startup_script        = "${data.template_cloudinit_config.ngnix_init.rendered}"
+#  startup_script        = "TERRAFORM_user=ubuntu\n${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"
+#  instance_tags         = ["devops", "ngnix", "ubuntu-1604", "${var.env}", "docker"]
+#  environment           = "${var.env}"
+#  instance_description  = "VM Instance dedicated to Devops"
+#}
 
 
 ##
