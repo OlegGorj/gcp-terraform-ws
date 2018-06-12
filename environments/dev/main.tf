@@ -29,8 +29,11 @@ variable "g_folder_id" {
 variable "source_ranges_ips" {
   default = ""
 }
-variable "devops_northamerica_northeast1_subnet1_cidr" {
+variable "devops_northamerica_northeast1_net_cidr" {
   default = "10.0.0.0/16"
+}
+variable "devops_northamerica_northeast1_subnet1_cidr" {
+  default = "10.0.0.0/20"
 }
 variable "devops_northamerica_northeast1_region" {
   default = "northamerica-northeast1"
@@ -44,6 +47,15 @@ variable "region_zones" {
 ###############################################################################
 # RESOURCES
 ###############################################################################
+provider "google" {
+  region = "${var.region}"
+#  credentials = "${file("${var.credentials_file_path}")}"
+}
+#resource "google_storage_bucket_acl" "image-store-acl" {
+#  bucket = "${google_storage_bucket.blue-world-tf-state.name}"
+#  predefined_acl = "publicreadwrite"
+#}
+
 resource "google_dns_managed_zone" "dns-zone" {
   name        = "root-domain"
   dns_name    = "${var.domain}"
@@ -120,6 +132,7 @@ module "devops_shared_network" {
   name                      = "devops-shared-network"
   project                   = "${var.admin_project}"
   auto_create_subnetworks   = "false"
+  ip_cidr_range             = "${var.devops_northamerica_northeast1_net_cidr}"
 }
 
 module "devops_northamerica_northeast1_subnet1" {
