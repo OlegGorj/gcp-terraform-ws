@@ -68,6 +68,16 @@ resource "google_compute_instance" "bastion" {
     user = "${var.ssh_user}"
     private_key = "${file(var.ssh_private_key_file)}"
   }
+  # install mesos, haproxy, docker, openvpn, and configure the node
+  provisioner "remote-exec" {
+  scripts = [
+      "${path.module}/scripts/common_install_ubuntu.sh",
+      "${path.module}/scripts/openvpn_install_ubuntu.sh",
+      "${path.module}/scripts/haproxy_install.sh",
+      "${path.module}/scripts/common_config.sh"
+    ]
+  }
+
   tags = ["bastion", "vpn"]
 }
 

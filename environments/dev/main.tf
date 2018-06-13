@@ -231,8 +231,13 @@ resource "google_compute_firewall" "devops_network_vpn_fw" {
       protocol = "udp"
       ports = ["1194"]
   }
+  # This part is temp setup
+  allow {
+      protocol = "tcp"
+      ports = ["22"]
+  }
 
-  target_tags = ["vpn"]
+  target_tags = ["vpn", "bastion"]
   source_ranges = ["0.0.0.0/0"]
 }
 
