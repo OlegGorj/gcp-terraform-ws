@@ -17,10 +17,6 @@ resource "google_compute_network" "network" {
 }
 
 # outputs
-#output "ip_range" {
-#  value = "${google_compute_network.network.ip_cidr_range}"
-#}
-
 output "self_link" {
   value = "${google_compute_network.network.self_link}"
 }

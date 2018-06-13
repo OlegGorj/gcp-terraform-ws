@@ -29,11 +29,11 @@ variable "g_folder_id" {
 variable "source_ranges_ips" {
   default = ""
 }
-variable "devops_northamerica_northeast1_net_cidr" {
-  default = "10.0.0.0/16"
+variable "devops_net_cidr" {
+  default = "10.10.0.0/20"
 }
 variable "devops_northamerica_northeast1_subnet1_cidr" {
-  default = "10.0.0.0/20"
+  default = "10.10.0.0/24"
 }
 variable "devops_northamerica_northeast1_region" {
   default = "northamerica-northeast1"
@@ -55,12 +55,6 @@ provider "google" {
 #  bucket = "${google_storage_bucket.blue-world-tf-state.name}"
 #  predefined_acl = "publicreadwrite"
 #}
-
-resource "google_dns_managed_zone" "dns-zone" {
-  name        = "root-domain"
-  dns_name    = "${var.domain}"
-  description = "DNS zone"
-}
 
 module "devops_project_1" {
   source          = "../../modules/project"
@@ -127,12 +121,18 @@ resource "google_compute_shared_vpc_service_project" "devops_project_2" {
 #  ]
 #}
 
-module "devops_shared_network" {
-  source                    = "../../modules/network/compute_network"
-  name                      = "devops-shared-network"
-  project                   = "${var.admin_project}"
-  auto_create_subnetworks   = "false"
-  ip_cidr_range             = "${var.devops_northamerica_northeast1_net_cidr}"
+#module "devops_shared_network" {
+#  source                    = "../../modules/network/compute_network"
+#  name                      = "devops-shared-network"
+#  project                   = "${var.admin_project}"
+#  auto_create_subnetworks   = "false"
+#  ip_cidr_range             = "${var.devops_net_cidr}"
+#}
+resource "google_compute_network" "devops_shared_network" {
+  name                    = "devops-shared-network"
+#  auto_create_subnetworks = "false"
+  project                 = "${var.admin_project}"
+#  ipv4_range              = "${var.devops_net_cidr}"
 }
 
 module "devops_northamerica_northeast1_subnet1" {
@@ -140,17 +140,16 @@ module "devops_northamerica_northeast1_subnet1" {
   name            = "${var.env}-${var.devops_northamerica_northeast1_region}-devops-subnet1"
   project         = "${var.admin_project}"
   region          = "${var.devops_northamerica_northeast1_region}"
-  network         = "${module.devops_shared_network.self_link}"
+  network         = "${google_compute_network.devops_shared_network.self_link}"
   ip_cidr_range   = "${var.devops_northamerica_northeast1_subnet1_cidr}"
 }
 
 
-
 # Allow access DevOPS network only bastion instances  and limited source range
 resource "google_compute_firewall" "devops_network_ssh_bastion_fw" {
-  name    = "allow-ssh-icmp-http-devops_shared_network"
-  network = "${module.devops_shared_network.self_link}"
-  project = "${module.devops_shared_network.project}"
+  name    = "allow-ssh-icmp-http-devops-network"
+  network = "${google_compute_network.devops_shared_network.self_link}"
+  project = "${google_compute_network.devops_shared_network.project}"
 
   allow {
     protocol = "icmp"
@@ -166,9 +165,9 @@ resource "google_compute_firewall" "devops_network_ssh_bastion_fw" {
 }
 
 resource "google_compute_firewall" "devops_network_https_bastion_fw" {
-  name    = "allow-ssh-icmp-http-devops_shared_network"
-  network = "${module.devops_shared_network.self_link}"
-  project = "${module.devops_shared_network.project}"
+  name    = "allow-ssh-icmp-https-devops-network"
+  network = "${google_compute_network.devops_shared_network.self_link}"
+  project = "${google_compute_network.devops_shared_network.project}"
 
   allow {
     protocol = "icmp"
@@ -191,7 +190,7 @@ resource "google_compute_firewall" "devops_network_https_bastion_fw" {
 module "bastion_instance" {
   source                = "../../modules/network/bastion"
   name                  = "bastion-instance"
-  project               = "${module.devops_project_1.project_id}"
+  project               = "${google_compute_network.devops_shared_network.project}"
   zones                 = "${var.region_zones}"
   subnetwork           = "${module.devops_northamerica_northeast1_subnet1.self_link}"
   ssh_user              = "ubuntu"
@@ -204,9 +203,9 @@ module "bastion_instance" {
 # allow ssh access to other instances only from bastion
 # Allow access DevOPS network only bastion instances  and limited source range
 resource "google_compute_firewall" "devops_network_internal_fw" {
-  name    = "allow-all-internal-devops_shared_network"
-  network = "${module.devops_shared_network.self_link}"
-  project = "${module.devops_shared_network.project}"
+  name    = "allow-all-internal-devops-shared-network"
+  network = "${google_compute_network.devops_shared_network.self_link}"
+  project = "${google_compute_network.devops_shared_network.project}"
 
   allow {
       protocol = "tcp"
@@ -224,16 +223,36 @@ resource "google_compute_firewall" "devops_network_internal_fw" {
 }
 
 resource "google_compute_firewall" "devops_network_vpn_fw" {
-  name    = "allow-vpn-devops_shared_network"
-  network = "${module.devops_shared_network.self_link}"
+  name    = "allow-vpn-devops-shared-network"
+  network = "${google_compute_network.devops_shared_network.self_link}"
+  project = "${google_compute_network.devops_shared_network.project}"
 
-    allow {
-        protocol = "udp"
-        ports = ["1194"]
-    }
+  allow {
+      protocol = "udp"
+      ports = ["1194"]
+  }
 
-    target_tags = ["vpn"]
-    source_ranges = ["0.0.0.0/0"]
+  target_tags = ["vpn"]
+  source_ranges = ["0.0.0.0/0"]
+}
+
+#
+# DNS
+#
+resource "google_dns_managed_zone" "dns-zone" {
+  name        = "dev-zone"
+  dns_name    = "${var.domain}."
+  description = "DNS zone"
+  project     = "${var.admin_project}"
+}
+
+resource "google_dns_record_set" "dev-dns-zone" {
+  project       = "${var.admin_project}"
+  name          = "vpn.dev.${google_dns_managed_zone.dns-zone.dns_name}"
+  type          = "A"
+  ttl           = 300
+  managed_zone  = "${google_dns_managed_zone.dns-zone.name}"
+  rrdatas       = ["${module.bastion_instance.public_ip}"]
 }
 
 
