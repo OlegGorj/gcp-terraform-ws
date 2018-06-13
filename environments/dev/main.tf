@@ -109,18 +109,6 @@ resource "google_compute_shared_vpc_service_project" "devops_project_2" {
   ]
 }
 
-# Create the hosted network.
-#resource "google_compute_network" "devops_shared_network" {
-#  name                    = "devops-compute-network"
-#  auto_create_subnetworks = "false"
-#  project                 = "${var.admin_project}"
-#
-#  depends_on = [
-#    "module.devops_project_1",
-#    "module.devops_project_2"
-#  ]
-#}
-
 #module "devops_shared_network" {
 #  source                    = "../../modules/network/compute_network"
 #  name                      = "devops-shared-network"
@@ -192,12 +180,12 @@ module "bastion_instance" {
   name                  = "bastion-instance"
   project               = "${google_compute_network.devops_shared_network.project}"
   zones                 = "${var.region_zones}"
-  subnetwork           = "${module.devops_northamerica_northeast1_subnet1.self_link}"
+  subnetwork            = "${module.devops_northamerica_northeast1_subnet1.self_link}"
   ssh_user              = "ubuntu"
   ssh_key               = "${var.tf_ssh_key}"
   ssh_private_key_file  = "${var.tf_ssh_private_key_file}"
   environment           = "${var.env}"
-  domain    = "${var.domain}"
+  domain                = "${var.domain}"
 }
 
 # allow ssh access to other instances only from bastion
@@ -245,7 +233,7 @@ resource "google_compute_firewall" "devops_network_vpn_fw" {
 # DNS
 #
 resource "google_dns_managed_zone" "dns-zone" {
-  name        = "dev-zone"
+  name        = "dns-managed-zone"
   dns_name    = "${var.domain}."
   description = "DNS zone"
   project     = "${var.admin_project}"

@@ -22,10 +22,10 @@ variable "instance_description" {
   default = "Bastion instance"
 }
 
-data "google_compute_image" "cos_cloud" {
-  family = "cos-stable"
-  project = "cos-cloud"
-}
+#data "google_compute_image" "cos_cloud" {
+#  family = "cos-stable"
+#  project = "cos-cloud"
+#}
 
 # main.tf
 resource "google_compute_instance" "bastion" {
@@ -36,7 +36,8 @@ resource "google_compute_instance" "bastion" {
 
   boot_disk {
     initialize_params {
-      image = "${data.google_compute_image.cos_cloud.self_link}"
+      #image = "${data.google_compute_image.cos_cloud.self_link}"
+      image = "ubuntu-1604-lts"
     }
   }
 #  boot_disk {
@@ -61,6 +62,7 @@ resource "google_compute_instance" "bastion" {
     myid = "${count.index}"
     domain = "${var.domain}"
     subnetwork = "${var.subnetwork}"
+    hostname = "vpn.${var.environment}.${var.domain}"
   }
   # define default connection for remote provisioners
   connection {
