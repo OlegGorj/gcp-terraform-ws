@@ -1,5 +1,6 @@
 .gcp_env
 .terraform
+environments/*/*.ovpn
 environments/*/*.tfvars
 environments/*/.terraform
 environments/*/*.tfstate*
