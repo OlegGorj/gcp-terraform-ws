@@ -68,7 +68,8 @@ HOSTNAME=`hostname`
   sudo cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf client.ovpn
 
   # update client configuration
-  IP=$(curl -fsSL -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
+  #IP=$(curl -fsSL -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
+  IP=${HOSTNAME}
   sudo sed -i "s/remote my-server-1 1194/remote ${IP} 1194/g" client.ovpn
   sudo sed -i "s/;user nobody/user nobody/g" client.ovpn
   sudo sed -i "s/;group nogroup/group nogroup/g" client.ovpn
@@ -78,4 +79,8 @@ HOSTNAME=`hostname`
   echo -e "\n<ca>\n$(sudo cat /etc/openvpn/easy-rsa/keys/ca.crt)\n</ca>\n" | sudo tee -a client.ovpn > /dev/null
   echo -e "\n<cert>\n$(sudo cat /etc/openvpn/easy-rsa/keys/client1.crt)\n</cert>\n" | sudo tee -a client.ovpn > /dev/null
   echo -e "\n<key>\n$(sudo cat /etc/openvpn/easy-rsa/keys/client1.key)\n</key>\n" | sudo tee -a client.ovpn > /dev/null
+
+  cd ~/ && wget http://swupdate.openvpn.org/as/openvpn-as-2.5.2-Ubuntu16.amd_64.deb
+  sudo dpkg -i openvpn-as-2.5.2-Ubuntu16.amd_64.deb
+
 #fi
