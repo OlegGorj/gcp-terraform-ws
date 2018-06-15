@@ -9,10 +9,6 @@ variable "zone" {
 }
 variable "network" {
 }
-variable "instance_tags" {
-  type = "list"
-  default = [""]
-}
 variable "environment" {
   default = ""
 }
@@ -25,6 +21,14 @@ variable "automatic_restart" {
 variable "instance_description" {
   default = "Default instance description"
 }
+variable "tags" {
+  type = "list"
+  default = [""]
+}
+variable "ssh_user" {}
+variable "ssh_key" {}
+variable "ssh_private_key_file" {}
+
 
 # Resources
 data "google_compute_image" "cos_cloud" {
@@ -57,7 +61,8 @@ resource "google_compute_instance" "instance" {
   }
 
   metadata {
-    sshKeys = "ubuntu:${file("~/.ssh/dev_key.pub")}"
+#    sshKeys = "ubuntu:${file("~/.ssh/dev_key.pub")}"
+    ssh-keys = "${var.ssh_user}:${file("${var.ssh_key}")}"
   }
 
   labels {
@@ -65,7 +70,8 @@ resource "google_compute_instance" "instance" {
     machine_type  = "${var.machine_type}"
   }
 
-  tags = "${var.instance_tags}"
+#  tags = "${var.instance_tags}"
+  tags = "${var.tags}"
 
   scheduling {
     automatic_restart   = "${var.automatic_restart}"
