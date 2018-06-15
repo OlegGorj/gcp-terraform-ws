@@ -1,6 +1,9 @@
 
 # Vars
 variable "name" {}
+variable "hostname" {
+  default = ""
+}
 variable "project" {}
 variable "zones" {
   type = "list"
@@ -20,6 +23,9 @@ variable "environment" {
 }
 variable "instance_description" {
   default = "Bastion instance"
+}
+variable "tags" {
+  type = "list"
 }
 
 #data "google_compute_image" "cos_cloud" {
@@ -62,7 +68,7 @@ resource "google_compute_instance" "bastion" {
     myid = "${count.index}"
     domain = "${var.domain}"
     subnetwork = "${var.subnetwork}"
-    hostname = "vpn.${var.environment}.${var.domain}"
+#    hostname = "vpn.${var.environment}.${var.domain}"
   }
   # define default connection for remote provisioners
   connection {
@@ -70,7 +76,17 @@ resource "google_compute_instance" "bastion" {
     user = "${var.ssh_user}"
     private_key = "${file(var.ssh_private_key_file)}"
   }
-  # install mesos, haproxy, docker, openvpn, and configure the node
+  # install haproxy, docker, openvpn, and configure the node
+  provisioner "file" {
+      source      = "${path.module}/scripts/sethostname.sh"
+      destination = "/tmp/sethostname.sh"
+  }
+  provisioner "remote-exec" {
+  inline = [
+      "chmod +x /tmp/sethostname.sh",
+      "/tmp/sethostname.sh ${var.hostname}",
+    ]
+  }
   provisioner "remote-exec" {
   scripts = [
       "${path.module}/scripts/common_install_ubuntu.sh",
@@ -79,12 +95,10 @@ resource "google_compute_instance" "bastion" {
       "${path.module}/scripts/common_config.sh"
     ]
   }
-
-  tags = ["bastion", "vpn"]
+  tags = "${var.tags}"
 }
 
 # Outputs
-
 output "private_ip" {
   value = "${google_compute_instance.bastion.network_interface.0.address}"
 }

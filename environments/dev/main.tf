@@ -78,7 +78,6 @@ resource "google_project_service" "devops_project_1" {
 resource "google_compute_shared_vpc_service_project" "devops_project_1" {
   host_project    = "${var.admin_project}"
   service_project = "${module.devops_project_1.project_id}"
-
   depends_on = [
     "module.devops_project_1"
   ]
@@ -133,8 +132,28 @@ module "devops_northamerica_northeast1_subnet1" {
 
 
 # Allow access DevOPS network only bastion instances  and limited source range
+resource "google_compute_firewall" "devops_deploymentrange_ssh_bastion_fw" {
+  name    = "allow-deploymentrange-ssh-devops-bastion"
+  network = "${google_compute_network.devops_shared_network.self_link}"
+  project = "${google_compute_network.devops_shared_network.project}"
+
+  allow {
+    protocol = "icmp"
+  }
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  source_ranges = ["${var.source_ranges_ips}"]
+
+  target_tags = ["bastion", "vpn"]
+}
+
+
 resource "google_compute_firewall" "devops_network_https_bastion_fw" {
-  name    = "allow-ssh-icmp-https-devops-network"
+  name    = "allow-all-http-https-devops-bastion"
   network = "${google_compute_network.devops_shared_network.self_link}"
   project = "${google_compute_network.devops_shared_network.project}"
 
@@ -147,7 +166,7 @@ resource "google_compute_firewall" "devops_network_https_bastion_fw" {
     ports    = ["443", "80", "8080", "8443"]
   }
 
-  source_ranges = ["${var.source_ranges_ips}"]
+  source_ranges = ["0.0.0.0/0"]
 
   target_tags = ["bastion"]
 }
@@ -155,7 +174,8 @@ resource "google_compute_firewall" "devops_network_https_bastion_fw" {
 
 module "bastion_instance" {
   source                = "../../modules/network/bastion"
-  name                  = "bastion-instance"
+  name                  = "vpn-${var.env}-instance"
+  hostname              = "vpn.${var.env}.${var.domain}"
   project               = "${google_compute_network.devops_shared_network.project}"
   zones                 = "${var.region_zones}"
   subnetwork            = "${module.devops_northamerica_northeast1_subnet1.self_link}"
@@ -164,6 +184,7 @@ module "bastion_instance" {
   ssh_private_key_file  = "${var.tf_ssh_private_key_file}"
   environment           = "${var.env}"
   domain                = "${var.domain}"
+  tags                  = ["bastion", "vpn", "${var.env}"]
 }
 
 # allow ssh access to other instances only from bastion
@@ -203,6 +224,25 @@ resource "google_compute_firewall" "devops_network_vpn_fw" {
 
   target_tags = ["devops"]
   source_ranges = ["0.0.0.0/0"]
+}
+
+resource "google_compute_firewall" "devops_network_1194_bastion_fw" {
+  name    = "allow-all-1194-bastion-fw"
+  network = "${google_compute_network.devops_shared_network.self_link}"
+  project = "${google_compute_network.devops_shared_network.project}"
+
+  allow {
+    protocol = "icmp"
+  }
+
+  allow {
+    protocol = "tcp"
+    ports    = ["1194", "943"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+
+  target_tags = ["bastion", "vpn"]
 }
 
 #
