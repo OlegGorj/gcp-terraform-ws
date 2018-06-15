@@ -56,6 +56,10 @@ provider "google" {
 #  predefined_acl = "publicreadwrite"
 #}
 
+resource "google_compute_shared_vpc_host_project" "host_project" {
+  project    = "${var.admin_project}"
+}
+
 module "devops_project_1" {
   source          = "../../modules/project"
   name            = "service-prj-1-${var.env}"
@@ -65,21 +69,6 @@ module "devops_project_1" {
   folder_id       = "${var.g_folder_id}"
   domain          = "${var.domain}"
 }
-
-module "devops_project_2" {
-  source          = "../../modules/project"
-  name            = "service-prj-2-${var.env}"
-  region          = "${var.region}"
-  billing_account = "${var.billing_account}"
-  org_id          = "${var.org_id}"
-  folder_id       = "${var.g_folder_id}"
-  domain = "${var.domain}"
-}
-
-resource "google_compute_shared_vpc_host_project" "host_project" {
-  project    = "${var.admin_project}"
-}
-
 # Enable shared VPC in the two service projects and services need to be enabled on all new projects
 # Service project #1
 resource "google_project_service" "devops_project_1" {
@@ -96,6 +85,15 @@ resource "google_compute_shared_vpc_service_project" "devops_project_1" {
 }
 
 # Service project #2
+module "devops_project_2" {
+  source          = "../../modules/project"
+  name            = "service-prj-2-${var.env}"
+  region          = "${var.region}"
+  billing_account = "${var.billing_account}"
+  org_id          = "${var.org_id}"
+  folder_id       = "${var.g_folder_id}"
+  domain = "${var.domain}"
+}
 resource "google_project_service" "devops_project_2" {
   project = "${module.devops_project_2.project_id}"
   service = "compute.googleapis.com"
@@ -108,6 +106,7 @@ resource "google_compute_shared_vpc_service_project" "devops_project_2" {
     "module.devops_project_2"
   ]
 }
+
 
 #module "devops_shared_network" {
 #  source                    = "../../modules/network/compute_network"
@@ -134,24 +133,6 @@ module "devops_northamerica_northeast1_subnet1" {
 
 
 # Allow access DevOPS network only bastion instances  and limited source range
-resource "google_compute_firewall" "devops_network_ssh_bastion_fw" {
-  name    = "allow-ssh-icmp-http-devops-network"
-  network = "${google_compute_network.devops_shared_network.self_link}"
-  project = "${google_compute_network.devops_shared_network.project}"
-
-  allow {
-    protocol = "icmp"
-  }
-  allow {
-    protocol = "tcp"
-    ports    = ["22"]
-  }
-
-  source_ranges = ["${var.source_ranges_ips}"]
-
-  target_tags = ["bastion"]
-}
-
 resource "google_compute_firewall" "devops_network_https_bastion_fw" {
   name    = "allow-ssh-icmp-https-devops-network"
   network = "${google_compute_network.devops_shared_network.self_link}"
@@ -170,9 +151,6 @@ resource "google_compute_firewall" "devops_network_https_bastion_fw" {
 
   target_tags = ["bastion"]
 }
-
-# TODO: Internal Communication fw
-
 
 
 module "bastion_instance" {
@@ -216,16 +194,14 @@ resource "google_compute_firewall" "devops_network_vpn_fw" {
   project = "${google_compute_network.devops_shared_network.project}"
 
   allow {
-      protocol = "udp"
-      ports = ["1194"]
+      protocol = "icmp"
   }
-  # This part is temp setup
   allow {
       protocol = "tcp"
       ports = ["22"]
   }
 
-  target_tags = ["vpn", "bastion"]
+  target_tags = ["devops"]
   source_ranges = ["0.0.0.0/0"]
 }
 
@@ -251,18 +227,18 @@ resource "google_dns_record_set" "dev-dns-zone" {
 
 ## Create VM instances for each project
 ## Instance #1
-#module "devops_instance_vm1" {
-#  source                = "../../modules/instance/compute"
-#  name                  = "devops-instance-vm1"
-#  project               = "${module.devops_project_1.project_id}"
-#  zone                  = "${element(var.region_zones, 0)}"
-#  network               = "${module.devops_shared_network.self_link}"
-#  startup_script        = "VM_NAME=VM1\n${file("../../modules/instance/compute/scripts/install_vm.sh")}"
-#  instance_tags         = ["devops", "debian-8", "${var.env}", "apache2"]
-#  environment           = "${var.env}"
-#  instance_description  = "VM Instance dedicated to Devops"
-#}
-#
+module "devops_instance_vm1" {
+  source                = "../../modules/instance/compute"
+  name                  = "devops-instance-vm1"
+  project               = "${google_compute_network.devops_shared_network.project}"
+  zone                  = "${element(var.region_zones, 0)}"
+  network               = "${google_compute_network.devops_shared_network.self_link}"
+  startup_script        = "VM_NAME=VM1\n${file("../../modules/instance/compute/scripts/install_vm.sh")}"
+  instance_tags         = ["devops", "debian-8", "${var.env}", "apache2"]
+  environment           = "${var.env}"
+  instance_description  = "VM Instance dedicated to Devops"
+}
+
 ## Instance #2 - ngnix on docker
 #data "template_file" "docker_init_script" {
 #  template = "${file("${path.module}/../../modules/instance/compute/scripts/docker_install.sh")}"
