@@ -100,6 +100,9 @@ gcloud services enable compute.googleapis.com
 echo "INFO: Enabling service sqladmin.."
 gcloud services enable sqladmin.googleapis.com
 
+echo "INFO: Enabling service DNS Managed Zones API.."
+gcloud services enable dns.googleapis.com
+
 # Activate Terraform service account
 # gcloud auth activate-service-account --key-file=${TF_CREDS}
 

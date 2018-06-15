@@ -1,9 +1,9 @@
 #!/bin/bash -e
 HOSTNAME=`hostname`
 
-#only install if hostname ends with 0 (only do this for the first master in the cluster)
-if [ ${HOSTNAME: -1} -eq 0 ]
-then
+##only install if hostname ends with 0 (only do this for the first master in the cluster)
+#if [ ${HOSTNAME: -1} -eq 0 ]
+#then
   # install packages
   sudo apt-get -y install openvpn easy-rsa
 
@@ -29,11 +29,11 @@ then
   # configure keys
   cd /etc/openvpn/easy-rsa
   source vars
-  export KEY_COUNTRY="NL"
-  export KEY_PROVINCE="NH"
-  export KEY_CITY="Amsterdam"
-  export KEY_ORG="Container Solutions"
-  export KEY_EMAIL="sysadmin@container-solutions.com"
+  export KEY_COUNTRY="CA"
+  export KEY_PROVINCE="ON"
+  export KEY_CITY="Toronto"
+  export KEY_ORG="Theta Solutions"
+  export KEY_EMAIL="admin@thetaconsulting.cloud"
   export KEY_NAME="server"
 
   # generate the Diffie-Hellman parameters
@@ -68,7 +68,8 @@ then
   sudo cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf client.ovpn
 
   # update client configuration
-  IP=$(curl -fsSL -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
+  #IP=$(curl -fsSL -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
+  IP=${HOSTNAME}
   sudo sed -i "s/remote my-server-1 1194/remote ${IP} 1194/g" client.ovpn
   sudo sed -i "s/;user nobody/user nobody/g" client.ovpn
   sudo sed -i "s/;group nogroup/group nogroup/g" client.ovpn
@@ -78,6 +79,8 @@ then
   echo -e "\n<ca>\n$(sudo cat /etc/openvpn/easy-rsa/keys/ca.crt)\n</ca>\n" | sudo tee -a client.ovpn > /dev/null
   echo -e "\n<cert>\n$(sudo cat /etc/openvpn/easy-rsa/keys/client1.crt)\n</cert>\n" | sudo tee -a client.ovpn > /dev/null
   echo -e "\n<key>\n$(sudo cat /etc/openvpn/easy-rsa/keys/client1.key)\n</key>\n" | sudo tee -a client.ovpn > /dev/null
-fi
 
+  cd ~/ && wget http://swupdate.openvpn.org/as/openvpn-as-2.5.2-Ubuntu16.amd_64.deb
+  sudo dpkg -i openvpn-as-2.5.2-Ubuntu16.amd_64.deb
 
+#fi

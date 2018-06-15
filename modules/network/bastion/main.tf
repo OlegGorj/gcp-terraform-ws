@@ -1,8 +1,13 @@
 
 # Vars
 variable "name" {}
+variable "hostname" {
+  default = ""
+}
 variable "project" {}
-variable "zones" { type = "list" }
+variable "zones" {
+  type = "list"
+}
 variable "subnetwork" {}
 variable "domain" {}
 variable "instance_type" {
@@ -19,11 +24,14 @@ variable "environment" {
 variable "instance_description" {
   default = "Bastion instance"
 }
-
-data "google_compute_image" "cos_cloud" {
-  family = "cos-stable"
-  project = "cos-cloud"
+variable "tags" {
+  type = "list"
 }
+
+#data "google_compute_image" "cos_cloud" {
+#  family = "cos-stable"
+#  project = "cos-cloud"
+#}
 
 # main.tf
 resource "google_compute_instance" "bastion" {
@@ -34,7 +42,8 @@ resource "google_compute_instance" "bastion" {
 
   boot_disk {
     initialize_params {
-      image = "${data.google_compute_image.cos_cloud.self_link}"
+      #image = "${data.google_compute_image.cos_cloud.self_link}"
+      image = "ubuntu-1604-lts"
     }
   }
 #  boot_disk {
@@ -59,6 +68,7 @@ resource "google_compute_instance" "bastion" {
     myid = "${count.index}"
     domain = "${var.domain}"
     subnetwork = "${var.subnetwork}"
+#    hostname = "vpn.${var.environment}.${var.domain}"
   }
   # define default connection for remote provisioners
   connection {
@@ -66,11 +76,29 @@ resource "google_compute_instance" "bastion" {
     user = "${var.ssh_user}"
     private_key = "${file(var.ssh_private_key_file)}"
   }
-  tags = ["bastion", "vpn"]
+  # install haproxy, docker, openvpn, and configure the node
+  provisioner "file" {
+      source      = "${path.module}/scripts/sethostname.sh"
+      destination = "/tmp/sethostname.sh"
+  }
+  provisioner "remote-exec" {
+  inline = [
+      "chmod +x /tmp/sethostname.sh",
+      "/tmp/sethostname.sh ${var.hostname}",
+    ]
+  }
+  provisioner "remote-exec" {
+  scripts = [
+      "${path.module}/scripts/common_install_ubuntu.sh",
+      "${path.module}/scripts/openvpn_install_ubuntu.sh",
+      "${path.module}/scripts/haproxy_install.sh",
+      "${path.module}/scripts/common_config.sh"
+    ]
+  }
+  tags = "${var.tags}"
 }
 
 # Outputs
-
 output "private_ip" {
   value = "${google_compute_instance.bastion.network_interface.0.address}"
 }

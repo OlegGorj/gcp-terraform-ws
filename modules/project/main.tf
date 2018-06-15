@@ -17,10 +17,10 @@ variable "folder_id" {
 #variable "credentials_file_path" {}
 
 # resources
-provider "google" {
-  region = "${var.region}"
-#  credentials = "${file("${var.credentials_file_path}")}"
-}
+#provider "google" {
+#  region = "${var.region}"
+##  credentials = "${file("${var.credentials_file_path}")}"
+#}
 
 data "google_organization" "theorganization" {
   domain = "${var.domain}"
