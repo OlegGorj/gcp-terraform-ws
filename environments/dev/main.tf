@@ -71,9 +71,18 @@ module "devops_project_1" {
 }
 # Enable shared VPC in the two service projects and services need to be enabled on all new projects
 # Service project #1
-resource "google_project_service" "devops_project_1" {
+resource "google_project_services" "devops_project_1" {
   project = "${module.devops_project_1.project_id}"
-  service = "compute.googleapis.com"
+#  service = "compute.googleapis.com"
+  services = [
+    "iam.googleapis.com",
+    "compute-component.googleapis.com",
+    "container.googleapis.com",
+    "servicemanagement.googleapis.com",
+    "cloudresourcemanager.googleapis.com",
+    "storage-api.googleapis.com",
+    "dns.googleapis.com"
+  ]
 }
 resource "google_compute_shared_vpc_service_project" "devops_project_1" {
   host_project    = "${var.admin_project}"
