@@ -24,8 +24,6 @@ RANDOMID=$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 8 ; echo)
 TF_PROJECT_ID="${TF_ADMIN}-${TF_ENV}-${RANDOMID}"
 
 echo "INFO: Checking if folder named ${TF_FOLDER} exists.. please stand by.. "
-#FOLDERS=$(gcloud alpha resource-manager folders list --organization ${TF_VAR_org_id} --format json | jq '.[] | .displayName')
-#FOLDER_CHECK=$(gcloud alpha resource-manager folders list --organization ${TF_VAR_org_id} --format json | jq '.[] | .displayName' | grep ${TF_FOLDER} )
 FULL_FOLDER_ID=$(gcloud alpha resource-manager folders list --organization ${TF_VAR_org_id} --format json | jq -r --arg TF_FOLDER "$TF_FOLDER" '.[] | select(.displayName==$TF_FOLDER ) | .name')
 
 if [[ ! -z "${FULL_FOLDER_ID}" ]]; then
