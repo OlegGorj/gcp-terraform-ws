@@ -5,9 +5,7 @@
 
 # GCP infrastructure and services with Terraform
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/4b6ede56298049ec87e5c0556304aec9)](https://app.codacy.com/app/oleggorj/gcp-terraform-ws?utm_source=github.com&utm_medium=referral&utm_content=OlegGorj/gcp-terraform-ws&utm_campaign=badger)
-
-A few practice/test projects on Google Cloud using Terraform and Packer
+A set of projects on Google Cloud using Terraform and Packer. Objective is to create and test foundational projects and re-use them in future developemnt.
 
 ---
 
