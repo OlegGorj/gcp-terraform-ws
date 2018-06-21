@@ -33,7 +33,7 @@ HOSTNAME=`hostname`
   export KEY_PROVINCE="ON"
   export KEY_CITY="Toronto"
   export KEY_ORG="Theta Solutions"
-  export KEY_EMAIL="admin@thetaconsulting.cloud"
+  export KEY_EMAIL=""
   export KEY_NAME="server"
 
   # generate the Diffie-Hellman parameters

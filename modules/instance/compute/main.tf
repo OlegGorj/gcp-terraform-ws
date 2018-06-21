@@ -61,7 +61,6 @@ resource "google_compute_instance" "instance" {
   }
 
   metadata {
-#    sshKeys = "ubuntu:${file("~/.ssh/dev_key.pub")}"
     ssh-keys = "${var.ssh_user}:${file("${var.ssh_key}")}"
   }
 
@@ -70,7 +69,6 @@ resource "google_compute_instance" "instance" {
     machine_type  = "${var.machine_type}"
   }
 
-#  tags = "${var.instance_tags}"
   tags = "${var.tags}"
 
   scheduling {

@@ -90,9 +90,8 @@ resource "google_compute_instance" "bastion" {
   provisioner "remote-exec" {
   scripts = [
       "${path.module}/scripts/common_install_ubuntu.sh",
-      "${path.module}/scripts/openvpn_install_ubuntu.sh",
-      "${path.module}/scripts/haproxy_install.sh",
-      "${path.module}/scripts/common_config.sh"
+      "${path.module}/scripts/deploy_docker_openvpn.sh",
+      "${path.module}/scripts/haproxy_install.sh"
     ]
   }
   tags = "${var.tags}"
