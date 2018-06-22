@@ -81,7 +81,8 @@ resource "google_project_services" "devops_project_1" {
     "servicemanagement.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "storage-api.googleapis.com",
-    "dns.googleapis.com"
+    "dns.googleapis.com",
+    "oslogin.googleapis.com"
   ]
 }
 resource "google_compute_shared_vpc_service_project" "devops_project_1" {
@@ -141,8 +142,8 @@ module "devops_northamerica_northeast1_subnet1" {
 
 
 # Allow access DevOPS network only bastion instances  and limited source range
-resource "google_compute_firewall" "devops_deploymentrange_ssh_bastion_fw" {
-  name    = "allow-deploymentrange-ssh-devops-bastion"
+resource "google_compute_firewall" "devops_deploymentrange_sshport_bastion_fw" {
+  name    = "allow-deploymentrange-sshport-bastion"
   network = "${google_compute_network.devops_shared_network.self_link}"
   project = "${google_compute_network.devops_shared_network.project}"
 
@@ -162,7 +163,7 @@ resource "google_compute_firewall" "devops_deploymentrange_ssh_bastion_fw" {
 
 
 resource "google_compute_firewall" "devops_network_https_bastion_fw" {
-  name    = "allow-all-http-https-devops-bastion"
+  name    = "allow-all-httpsports-bastion"
   network = "${google_compute_network.devops_shared_network.self_link}"
   project = "${google_compute_network.devops_shared_network.project}"
 
@@ -197,7 +198,6 @@ module "bastion_instance" {
 }
 
 # allow ssh access to other instances only from bastion
-# Allow access DevOPS network only bastion instances  and limited source range
 resource "google_compute_firewall" "devops_network_internal_fw" {
   name    = "allow-all-internal-devops-shared-network"
   network = "${google_compute_network.devops_shared_network.self_link}"
@@ -218,8 +218,8 @@ resource "google_compute_firewall" "devops_network_internal_fw" {
   source_ranges = ["${module.devops_northamerica_northeast1_subnet1.ip_range}"]
 }
 
-resource "google_compute_firewall" "devops_network_vpn_fw" {
-  name    = "allow-vpn-devops-shared-network"
+resource "google_compute_firewall" "devops_network_sshvpn_fw" {
+  name    = "allow-sshvpn-devops-shared-network"
   network = "${google_compute_network.devops_shared_network.self_link}"
   project = "${google_compute_network.devops_shared_network.project}"
 
@@ -235,8 +235,8 @@ resource "google_compute_firewall" "devops_network_vpn_fw" {
   source_ranges = ["0.0.0.0/0"]
 }
 
-resource "google_compute_firewall" "devops_network_1194_bastion_fw" {
-  name    = "allow-all-1194-bastion-fw"
+resource "google_compute_firewall" "devops_network_adminports_bastion_fw" {
+  name    = "allow-adminports-bastion-fw"
   network = "${google_compute_network.devops_shared_network.self_link}"
   project = "${google_compute_network.devops_shared_network.project}"
 
@@ -283,9 +283,12 @@ module "devops_instance_vm1" {
   zone                  = "${element(var.region_zones, 0)}"
   network               = "${google_compute_network.devops_shared_network.self_link}"
   startup_script        = "VM_NAME=VM1\n${file("../../modules/instance/compute/scripts/install_vm.sh")}"
-  instance_tags         = ["devops", "debian-8", "${var.env}", "apache2"]
+  tags                  = ["devops", "${var.env}", "apache2"]
   environment           = "${var.env}"
   instance_description  = "VM Instance dedicated to Devops"
+  ssh_user              = "ubuntu"
+  ssh_key               = "${var.tf_ssh_key}"
+  ssh_private_key_file  = "${var.tf_ssh_private_key_file}"
 }
 
 ## Instance #2 - ngnix on docker
@@ -332,7 +335,7 @@ module "devops_instance_vm1" {
 ##  startup_script        = "TERRAFORM_user=ubuntu\n${file("${path.module}/../../modules/instance/compute/scripts/docker_install.sh")}\n${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"
 ##  startup_script        = "${data.template_cloudinit_config.ngnix_init.rendered}"
 #  startup_script        = "TERRAFORM_user=ubuntu\n${file("${path.module}/../../modules/instance/compute/scripts/ngnix_install.sh")}"
-#  instance_tags         = ["devops", "ngnix", "ubuntu-1604", "${var.env}", "docker"]
+#  tags         = ["devops", "ngnix", "ubuntu-1604", "${var.env}", "docker"]
 #  environment           = "${var.env}"
 #  instance_description  = "VM Instance dedicated to Devops"
 #}
