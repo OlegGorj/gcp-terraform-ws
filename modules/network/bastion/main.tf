@@ -87,6 +87,7 @@ resource "google_compute_instance" "bastion" {
       "/tmp/sethostname.sh ${var.hostname}",
     ]
   }
+  
   provisioner "remote-exec" {
   scripts = [
       "${path.module}/scripts/common_install_ubuntu.sh",
