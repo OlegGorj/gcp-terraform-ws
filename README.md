@@ -20,6 +20,13 @@ Objectives:
 
 ## Step 1: Setup environment
 
+First, make sure you have the prerequisite software:
+
+```
+jq                    - https://stedolan.github.io/jq/download
+docker engine         - https://www.docker.com/community-edition
+terraform 0.9.6*      - https://www.terraform.io/downloads.html
+```
 
 Create GCP environment file in your home directory called `~/.gcp_env` with the following content
 
