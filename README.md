@@ -2,6 +2,7 @@
 [![GitHub Issues](https://img.shields.io/github/issues/OlegGorJ/gcp-terraform-ws.svg)](https://github.com/OlegGorJ/gcp-terraform-ws/issues)
 [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/OlegGorJ/gcp-terraform-ws.svg)](http://isitmaintained.com/project/OlegGorJ/gcp-terraform-ws "Average time to resolve an issue")
 [![Percentage of issues still open](http://isitmaintained.com/badge/open/OlegGorJ/gcp-terraform-ws.svg)](http://isitmaintained.com/project/OlegGorJ/gcp-terraform-ws "Percentage of issues still open")
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FOlegGorj%2Fgcp-terraform-ws.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FOlegGorj%2Fgcp-terraform-ws?ref=badge_shield)
 
 # GCP infrastructure and services with Terraform
 
@@ -85,3 +86,7 @@ terraform plan
 At this point, your TF with GCP as provider and backend, is setup and ready to go.
 
 ---
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FOlegGorj%2Fgcp-terraform-ws.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FOlegGorj%2Fgcp-terraform-ws?ref=badge_large)
