@@ -1,4 +1,7 @@
 #!/bin/bash -e
+
+echo "INFO: >> Start of the deployment script"
+
 HOSTNAME=`hostname`
 
 CLIENTNAME=openvpn
@@ -6,11 +9,23 @@ ENDPOINT_SERVER=`hostname`
 INGRESS_IP_ADDRESS=`hostname`
 
 echo "INFO: Deploying OpenVPN docker image and initializing PKIs"
-sudo docker run --user=root -e OVPN_CN=$ENDPOINT_SERVER  -e OVPN_SERVER_URL=tcp://$ENDPOINT_SERVER:1194 -i -v $PWD:/etc/openvpn oleggorj/openvpn ovpn_initpki nopass $ENDPOINT_SERVER
 
-echo "INFO: Generating client configs ($CLIENTNAME)"
-sudo docker run --user=root -v $PWD:/etc/openvpn -ti oleggorj/openvpn easyrsa build-client-full $CLIENTNAME nopass
+docker run -v $OVPN_DATA:/etc/openvpn --log-driver=none --rm oleggorj/openvpn ovpn_genconfig -u udp://$ENDPOINT_SERVER
 
-echo "INFO: Generating OVPN file ~/openvpn/${CLIENTNAME}.ovpn"
-#mkdir ~/openvpn && cd ~/openvpn &&
-sudo docker run --user=root -e OVPN_DEFROUTE=1 -e OVPN_SERVER_URL=tcp://$INGRESS_IP_ADDRESS:80 -v $PWD:/etc/openvpn --rm oleggorj/openvpn ovpn_getclient $CLIENTNAME > ./${CLIENTNAME}.ovpn
+docker run -v $OVPN_DATA:/etc/openvpn --log-driver=none --rm -it oleggorj/openvpn ovpn_initpki
+
+echo "INFO: Starting OpebVPN server"
+
+docker run -v $OVPN_DATA:/etc/openvpn -d -p 1194:1194/udp --cap-add=NET_ADMIN oleggorj/openvpn
+
+echo "INFO: Generating client certificates ($CLIENTNAME)"
+
+docker run -v $OVPN_DATA:/etc/openvpn --log-driver=none --rm -it oleggorj/openvpn easyrsa build-client-full $CLIENTNAME nopass
+
+
+echo "INFO: Generating OVPN file ~/${CLIENTNAME}.ovpn"
+
+docker run -v $OVPN_DATA:/etc/openvpn --log-driver=none --rm oleggorj/openvpn ovpn_getclient $CLIENTNAME > ~/$CLIENTNAME.ovpn
+
+
+echo "INFO: << End of the deployment script"
