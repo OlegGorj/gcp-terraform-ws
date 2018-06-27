@@ -51,15 +51,15 @@ export GOOGLE_ADMIN_ACCOUNT=<admin account of your domain>
 
 ```
 
-## Step 2: clone repo
+## Step 3: Using GCP CLI create Host project, service account and generate Terraform code to store the state at the backend bucket
+
+### Clone repo:
 
 ```
 git clone https://github.com/OlegGorj/gcp-terraform-ws.git
 ```
 
-## Step 3: Using GCP CLI create Host project, service account and generate Terraform code to store the state at the backend bucket
-
-Set of commands bellow does the following:
+### Set of commands bellow does the following:
 
 - Attempt to connect to GCP using provided credentials
 - Create folder under root (i.e. organization) `TF_FOLDER`
