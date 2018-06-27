@@ -8,6 +8,8 @@ CLIENTNAME=openvpn
 ENDPOINT_SERVER=`hostname`
 INGRESS_IP_ADDRESS=`hostname`
 
+OVPN_DATA="ovpn-data-vol"
+
 echo "INFO: Deploying OpenVPN docker image and initializing PKIs"
 
 docker run -v $OVPN_DATA:/etc/openvpn --log-driver=none --rm oleggorj/openvpn ovpn_genconfig -u udp://$ENDPOINT_SERVER
@@ -27,5 +29,8 @@ echo "INFO: Generating OVPN file ~/${CLIENTNAME}.ovpn"
 
 docker run -v $OVPN_DATA:/etc/openvpn --log-driver=none --rm oleggorj/openvpn ovpn_getclient $CLIENTNAME > ~/$CLIENTNAME.ovpn
 
+echo "INFO: Starting OpenVPN Access Server"
+
+docker run --name=openvpn-as -v $OVPN_DATA:/etc/openvpn --log-driver=none --rm --privileged --cap-add=NET_ADMIN -d -p 8080:8080 -p 943:943 -p 9443:9443  linuxserver/openvpn-as
 
 echo "INFO: << End of the deployment script"
