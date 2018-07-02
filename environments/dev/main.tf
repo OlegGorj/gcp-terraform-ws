@@ -218,6 +218,7 @@ resource "google_compute_firewall" "devops_network_internal_fw" {
   source_ranges = ["${module.devops_northamerica_northeast1_subnet1.ip_range}"]
 }
 
+# allow 22 port to all instances with tag `devops`
 resource "google_compute_firewall" "devops_network_sshvpn_fw" {
   name    = "allow-sshvpn-devops-shared-network"
   network = "${google_compute_network.devops_shared_network.self_link}"
@@ -235,7 +236,8 @@ resource "google_compute_firewall" "devops_network_sshvpn_fw" {
   source_ranges = ["0.0.0.0/0"]
 }
 
-resource "google_compute_firewall" "devops_network_adminports_bastion_fw" {
+# open admin ports to manage openvpn
+resource "google_compute_firewall" "devops_network_adminports_openvpn_fw" {
   name    = "allow-adminports-bastion-fw"
   network = "${google_compute_network.devops_shared_network.self_link}"
   project = "${google_compute_network.devops_shared_network.project}"
@@ -246,16 +248,22 @@ resource "google_compute_firewall" "devops_network_adminports_bastion_fw" {
 
   allow {
     protocol = "tcp"
+    ports    = ["8080", "943", "9443"]
+  }
+  allow {
+    protocol = "udp"
     ports    = ["1194", "943"]
   }
 
   source_ranges = ["0.0.0.0/0"]
 
-  target_tags = ["bastion", "vpn"]
+  target_tags = ["bastion", "vpn", "openvpn"]
 }
 
 #
 # DNS
+#
+# TODO: move DNS zones part to AWS
 #
 resource "google_dns_managed_zone" "dns-zone" {
   name        = "dns-managed-zone"
